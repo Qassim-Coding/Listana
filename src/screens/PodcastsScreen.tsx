@@ -3,11 +3,11 @@ import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import EditPodcastModal from "../components/EditPodcastModal";
 import PodcastCard from "../components/PodcastCard";
 import {
-    addPodcast,
-    duplicatePodcastFrom,
-    getPodcasts,
-    sortPodcasts,
-    updatePodcast
+  addPodcast,
+  duplicatePodcastFrom,
+  getPodcasts,
+  sortPodcasts,
+  updatePodcast,
 } from "../storage/podcast.store";
 import { Podcast } from "../types/podcast";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -72,17 +72,19 @@ export default function PodcastsScreen() {
   const sortedPodcasts =
     sortBy === "updated"
       ? sortPodcasts(filteredByStatus)
-      : [...filteredByStatus].sort((a, b) =>
-          (a.title || "").localeCompare(b.title || "")
-        );
+      : [...filteredByStatus].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>🎧 Mes podcasts</Text>
+      <Text style={styles.heading}>Mes podcasts</Text>
 
       {/* Filtre Type */}
       <View style={styles.row}>
-        {[{ key: "all", label: "Tous types" }, { key: "podcast", label: "Podcast" }, { key: "audiobook", label: "Livre audio" }].map((opt) => (
+        {[
+          { key: "all", label: "Tous types" },
+          { key: "podcast", label: "Podcast" },
+          { key: "audiobook", label: "Livre audio" },
+        ].map((opt) => (
           <Pressable
             key={opt.key}
             onPress={() => setTypeFilter(opt.key as any)}
@@ -127,7 +129,7 @@ export default function PodcastsScreen() {
 
       {/* Liste */}
       {sortedPodcasts.length === 0 ? (
-        <View style={styles.empty}> 
+        <View style={styles.empty}>
           <Text style={styles.emptyTitle}>Aucun podcast pour l'instant</Text>
           <Text style={styles.emptySub}>Ajoute un podcast avec le bouton ci-dessous.</Text>
         </View>
@@ -175,9 +177,9 @@ function labelStatus(key: string) {
     case "listening":
       return "En cours";
     case "completed":
-      return "Terminé";
+      return "Terminés";
     case "abandoned":
-      return "Abandonné";
+      return "Abandonnés";
     default:
       return key;
   }

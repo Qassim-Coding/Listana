@@ -79,7 +79,7 @@ export default function TVShowsScreen() {
       {/* Liste */}
       {visibleShows.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.empty}>Ajoute ta première série 📺</Text>
+          <Text style={styles.empty}>Ajoute ta première série 😊</Text>
         </View>
       ) : (
         <FlatList
@@ -158,3 +158,4 @@ const styles = StyleSheet.create({
   },
   addText: { color: "#fff", fontWeight: "600", fontSize: 16 },
 });
+

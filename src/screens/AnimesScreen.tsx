@@ -50,7 +50,7 @@ export default function AnimesScreen() {
               {f === "all"
                 ? "Tous"
                 : f === "planning"
-                ? "à voir"
+                ? "À voir"
                 : f === "watching"
                 ? "En cours"
                 : f === "done"
@@ -162,3 +162,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

@@ -6,7 +6,7 @@ import PodcastsScreen from "../src/screens/PodcastsScreen";
 export default function PodcastPage() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: "Podcasts" }} />
+      <Stack.Screen options={{ headerShown: true, title: "Podcast / Livre audio" }} />
       <PodcastsScreen />
     </>
   );

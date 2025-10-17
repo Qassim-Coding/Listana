@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import {
-    FlatList,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditGameModal from "../components/EditGameModal";
 import GameCard from "../components/GameCard";
 import { addGame, getGames, updateGame } from "../storage/game.store";
 import { Game } from "../types/game";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function GamesScreen() {
   const insets = useSafeAreaInsets();
@@ -56,7 +56,7 @@ export default function GamesScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>🎮 Mes jeux</Text>
+      <Text style={styles.heading}>Mes jeux</Text>
 
       <View style={styles.row}>
         {["all", "toPlay", "playing", "completed", "abandoned"].map((key) => (
@@ -218,3 +218,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+

@@ -26,6 +26,7 @@ export default function Home() {
 
         {/* Grille des médias */}
         <MediaGrid items={items} onPick={onPick} />
+        <Text onPress={() => router.push('/privacy')} style={styles.linkText}>Confidentialité</Text>
       </View>
     </SafeAreaView>
   );
@@ -56,6 +57,13 @@ const styles = StyleSheet.create({
     color: "#0E5A90",
     marginBottom: 28,
     fontStyle: "italic",
+    fontFamily: "Poppins_400Regular",
+  },
+  linkText: {
+    color: "#0E5A90",
+    textDecorationLine: "underline",
+    textAlign: "center",
+    marginTop: 16,
     fontFamily: "Poppins_400Regular",
   },
 });

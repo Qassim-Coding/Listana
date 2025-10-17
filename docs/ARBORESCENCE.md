@@ -72,12 +72,7 @@
 │  │  ├─ note.store.ts
 │  │  └─ podcast.store.ts
 │  │
-│  └─ utils/
-│     ├─ mangaStorage.js
-│     ├─ podcastStorage.js
-│     ├─ time.ts
-│     ├─ times.js
-│     └─ useDebouncedCallback.ts
+│  
 │
 ├─ assets/
 │  └─ images/
