@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   build:
+    name: Build Expo Web
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,14 +22,17 @@ jobs:
           node-version: 20
       - run: npm ci
       - name: Export Expo Web with public URL
-        run: >-
-          npx expo export --platform web
-          --public-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        env:
+          CI: false
+          LIGHTNINGCSS_IGNORE_NATIVE: 1
+          EXPO_PUBLIC_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        run: npx expo export --platform web --clear --output-dir dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
+    name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
     environment:

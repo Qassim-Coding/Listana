@@ -1,7 +1,9 @@
 {
   "name": "listana",
-  "main": "expo-router/entry",
   "version": "1.0.0",
+  "private": true,
+  "homepage": "https://Qassim-Coding.github.io/Listana",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -9,7 +11,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "export:web": "expo export --platform web",
+    "export:web": "expo export --platform web --clear --output-dir dist",
     "preview:web": "npx serve dist"
   },
   "dependencies": {
@@ -44,9 +46,9 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@types/react-native": "^0.72.8",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
-  },
-  "private": true
+  }
 }
