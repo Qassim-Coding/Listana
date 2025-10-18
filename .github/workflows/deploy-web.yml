@@ -15,11 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
-      - run: npm run export:web
+      - name: Export Expo Web with public URL
+        run: >-
+          npx expo export --platform web
+          --public-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
