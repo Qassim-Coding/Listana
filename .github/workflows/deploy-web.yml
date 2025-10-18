@@ -27,6 +27,8 @@ jobs:
           LIGHTNINGCSS_IGNORE_NATIVE: 1
           EXPO_PUBLIC_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
         run: npx expo export --platform web --clear --output-dir dist
+      - name: Inject home redirect (hash #/)
+        run: node scripts/inject-home-redirect.cjs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
