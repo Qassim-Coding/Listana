@@ -2,7 +2,8 @@ name: Deploy Web
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 permissions:
   pages: write
@@ -32,4 +33,3 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
-
