@@ -43,10 +43,15 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": true,
+      "router": {
+        "staticRendering": true
+      }
     },
     "extra": {
-      "router": { "history": "hash" }
+      "router": {
+        "history": "hash"
+      }
     }
   }
 }
