@@ -14,11 +14,16 @@ export default function RootLayout() {
     Poppins_600SemiBold,
     Poppins_700Bold,
   });
-  if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          // Allow rendering even before custom fonts are ready.
+          animation: fontsLoaded ? "default" : "none",
+        }}
+      />
     </SafeAreaProvider>
   );
 }
