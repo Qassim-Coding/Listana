@@ -17,4 +17,4 @@ Listana enregistre localement vos médias (titres, notes, progression). Aucune d
 ## Contact
 - Pour toute question : contact@example.com
 
-_Mise à jour : 01/2025_
+_Mise à jour : 19/10/2025_

@@ -9,8 +9,9 @@ const DIST = path.join(process.cwd(), 'dist');
 const PUBLIC_PREFIX = '/Listana';
 const TARGET_EXT = '.html';
 const STATIC_DIRS = ['_expo', 'assets'];
+const HASH_SNIPPET_ID = 'gh-pages-hash-redirect';
 
-function rewriteHtml(html) {
+function rewriteHtml(html, fileName) {
   let updated = html;
 
   STATIC_DIRS.forEach((dir) => {
@@ -19,6 +20,11 @@ function rewriteHtml(html) {
   });
 
   updated = updated.replace(/(=)(["'])\/favicon\.ico/g, (_, eq, quote) => `${eq}${quote}${PUBLIC_PREFIX}/favicon.ico`);
+
+  if (fileName === 'index.html' && !updated.includes(HASH_SNIPPET_ID)) {
+    const snippet = `<script id="${HASH_SNIPPET_ID}">(function(){if(!location.hash||location.hash==="#"){location.replace("#/");}})();</script>`;
+    updated = updated.replace('</head>', `${snippet}</head>`);
+  }
 
   return updated;
 }
@@ -40,7 +46,7 @@ function main() {
   for (const file of files) {
     const fullPath = path.join(DIST, file);
     const original = fs.readFileSync(fullPath, 'utf8');
-    const rewritten = rewriteHtml(original);
+    const rewritten = rewriteHtml(original, file);
 
     if (rewritten !== original) {
       fs.writeFileSync(fullPath, rewritten, 'utf8');
