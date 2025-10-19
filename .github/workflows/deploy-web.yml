@@ -29,7 +29,10 @@ jobs:
           CI: false
           LIGHTNINGCSS_IGNORE_NATIVE: 1
           EXPO_PUBLIC_URL: "https://qassim-coding.github.io/Listana"
-        run: npx expo export --platform web --clear --output-dir dist --public-url https://qassim-coding.github.io/Listana/
+        run: npx expo export --platform web --clear --output-dir dist
+
+      - name: Rewrite asset URLs for GitHub Pages
+        run: node scripts/fix-public-paths.cjs
 
       - uses: actions/upload-pages-artifact@v3
         with:

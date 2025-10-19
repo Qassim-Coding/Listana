@@ -11,6 +11,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "export:web": "expo export --platform web --clear --output-dir dist",
+    "postexport:web": "node scripts/fix-public-paths.cjs",
     "preview:web": "npx serve dist"
   },
   "dependencies": {

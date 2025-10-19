@@ -23,7 +23,8 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/Listana_Favicon_V1.png"
+      "favicon": "./assets/images/Listana_Favicon_V1.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
