@@ -1,6 +1,7 @@
 {
   "name": "listana",
   "version": "1.0.0",
+  "homepage": "https://qassim-coding.github.io/Listana",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -10,7 +11,6 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "export:web": "expo export --platform web --clear --output-dir dist",
-    "postexport:web": "node scripts/inject-home-redirect.cjs",
     "preview:web": "npx serve dist"
   },
   "dependencies": {
