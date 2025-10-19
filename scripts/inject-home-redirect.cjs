@@ -1,5 +1,5 @@
-// Inject a small script into dist/index.html to force hash home (#/)
-// Runs after export to ensure GitHub Pages opens on the home route
+// Inject base href and redirect script into dist/index.html for GitHub Pages compatibility
+// Ensures correct asset paths and hash routing
 // Safe to re-run: uses a marker to avoid duplicate injection
 
 const fs = require('fs');
@@ -23,15 +23,15 @@ function main() {
 
   const snippet = [
     MARKER,
+    '<base href="/Listana/">',
     '<script>(function(){try{',
-    // If no hash (or just '#'), redirect to #/ (keeps any ?query)
     'var h=location.hash; if(!h||h==="#"){',
     ' var base=location.pathname.replace(/index\\.html$/, "");',
     ' var q=location.search||"";',
     ' location.replace(base+"#/"+q);',
     '}',
     '}catch(e){}})();</script>'
-  ].join('');
+  ].join('\n');
 
   // Prefer to inject before </head>, else before </body>, else append
   if (html.includes('</head>')) {
@@ -47,4 +47,3 @@ function main() {
 }
 
 main();
-
