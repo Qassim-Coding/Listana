@@ -22,7 +22,8 @@ function rewriteHtml(html, fileName) {
   updated = updated.replace(/(=)(["'])\/favicon\.ico/g, (_, eq, quote) => `${eq}${quote}${PUBLIC_PREFIX}/favicon.ico`);
 
   if (fileName === 'index.html' && !updated.includes(HASH_SNIPPET_ID)) {
-    const snippet = `<script id="${HASH_SNIPPET_ID}">(function(){if(!location.hash||location.hash==="#"){location.replace("#/");}})();</script>`;
+    // Force le chemin complet /Listana/#/ pour éviter la redirection vers la racine
+    const snippet = `<script id="${HASH_SNIPPET_ID}">(function(){if(!location.hash||location.hash==="#"){location.replace("${PUBLIC_PREFIX}/#/");}})();</script>`;
     updated = updated.replace('</head>', `${snippet}</head>`);
   }
 
