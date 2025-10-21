@@ -4,20 +4,27 @@
     "slug": "Listana",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/Listana_Favicon_V1.png",
     "scheme": "listana",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.listana.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "",
+        "NSPhotoLibraryUsageDescription": "",
+        "NSMicrophoneUsageDescription": "",
+        "NSLocationWhenInUseUsageDescription": ""
+      }
     },
     "android": {
+      "package": "com.listana.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/images/Listana_Favicon_V1.png"
       },
+      "permissions": [],
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
@@ -52,6 +59,9 @@
     "extra": {
       "router": {
         "history": "hash"
+      },
+      "eas": {
+        "projectId": "2ede7089-a917-4fd7-b231-849ea67665c2"
       }
     }
   }

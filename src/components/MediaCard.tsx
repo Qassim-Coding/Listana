@@ -31,14 +31,14 @@ export default function MediaCard({ emoji, label, onPress, style }: Props) {
       ]}
     >
       <Text style={styles.emoji}>{emoji}</Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label} numberOfLines={2}>{label}</Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    aspectRatio: 1.1,
+    aspectRatio: 1,
     backgroundColor: "#F3F4F6",
     borderRadius: 14,
     alignItems: "center",
@@ -46,6 +46,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     // @ts-ignore - web-only
     cursor: isWeb ? 'pointer' : undefined,
     // @ts-ignore - web-only
@@ -58,11 +60,15 @@ const styles = StyleSheet.create({
     boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)',
     borderColor: "#12AAB8",
   },
-  emoji: { fontSize: 34, marginBottom: 6 },
+  emoji: { fontSize: 34, marginBottom: 8 },
   label: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#374151",
     fontWeight: "600",
     fontFamily: "Poppins_600SemiBold",
+    textAlign: "center",
+    lineHeight: 16,
+    flexShrink: 1,
+    width: "100%",
   },
 });
