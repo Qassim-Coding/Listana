@@ -5,9 +5,20 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 export default function PrivacyPage() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: "Confidentialité" }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "Confidentialité",
+          headerTintColor: "#12AAB8",
+          headerTitleStyle: {
+            fontFamily: "Poppins_700Bold",
+            fontSize: 22,
+            color: "#111827",
+          },
+        }}
+      />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Listana — Politique de confidentialité</Text>
+        <Text style={styles.title}>Listana – Politique de confidentialité</Text>
         <Text style={styles.p}>
           Listana enregistre localement vos médias (titres, notes, progression). Aucune donnée n’est
           envoyée à un serveur sans action explicite de votre part.
@@ -41,4 +52,3 @@ const styles = StyleSheet.create({
   h2: { fontSize: 16, fontWeight: "600", color: "#111827", marginTop: 8 },
   p: { fontSize: 14, color: "#374151" },
 });
-

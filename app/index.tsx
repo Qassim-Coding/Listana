@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import React from "react";
-import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, Text } from "react-native";
 import MediaGrid from "../src/components/MediaGrid";
 import { MEDIA } from "../src/constants/media";
 
@@ -18,7 +18,11 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Listana</Text>
         <Text style={styles.subtitle}>
           Suivez vos différents médias, sans jamais vous perdre ! 🤓
@@ -27,7 +31,7 @@ export default function Home() {
         {/* Grille des médias */}
         <MediaGrid items={items} onPick={onPick} />
         <Text onPress={() => router.push('/privacy')} style={styles.linkText}>Confidentialité</Text>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -37,10 +41,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
-  container: {
+  scrollView: {
     flex: 1,
+  },
+  container: {
     paddingHorizontal: 24,
     paddingTop: 32,
+    paddingBottom: 32,
   },
   title: {
     fontSize: 32,

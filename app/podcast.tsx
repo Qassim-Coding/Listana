@@ -6,7 +6,18 @@ import PodcastsScreen from "../src/screens/PodcastsScreen";
 export default function PodcastPage() {
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: "Podcast / Livre audio" }} />
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "Podcast / Livre audio",
+          headerTintColor: "#12AAB8",
+          headerTitleStyle: {
+            fontFamily: "Poppins_700Bold",
+            fontSize: 22,
+            color: "#111827",
+          },
+        }}
+      />
       <PodcastsScreen />
     </>
   );
