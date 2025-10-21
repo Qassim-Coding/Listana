@@ -1,6 +1,6 @@
 // src/components/AddBookModal.tsx
 import React, { useEffect, useState } from "react";
-import { Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 
 export default function AddBookModal({
   visible,
@@ -45,8 +45,15 @@ export default function AddBookModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <KeyboardAvoidingView 
+        style={styles.backdrop} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.sheet}>
           <Text style={styles.heading}>➕ Ajouter un livre</Text>
 
           <TextInput style={styles.input} placeholder="Titre *" value={title} onChangeText={setTitle} />
@@ -76,13 +83,15 @@ export default function AddBookModal({
             </Pressable>
           </View>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)", justifyContent: "flex-end" },
+  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
+  scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
   sheet: { backgroundColor: "#fff", padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16, gap: 8 },
   heading: { fontFamily: "Poppins_700Bold", fontSize: 16, color: "#111827", marginBottom: 6 },
   input: {

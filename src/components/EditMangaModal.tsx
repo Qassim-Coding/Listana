@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { Manga, MangaStatus } from "../types/manga";
 
@@ -57,8 +60,15 @@ export default function EditMangaModal({ visible, initial, onClose, onSubmit }: 
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <KeyboardAvoidingView 
+        style={styles.backdrop} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.sheet}>
           <Text style={styles.title}>{initial ? "Modifier le Manga" : "Nouveau Manga"}</Text>
 
           {/* Titre */}
@@ -148,7 +158,8 @@ export default function EditMangaModal({ visible, initial, onClose, onSubmit }: 
             </Pressable>
           </View>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -172,6 +183,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "flex-end",
   },
   sheet: {

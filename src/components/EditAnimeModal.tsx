@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 import { Anime, AnimeKind } from "../types/anime";
 
@@ -82,10 +83,13 @@ export default function EditAnimeModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={styles.sheet}>
           <SafeAreaView style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.scroll}>
+            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.heading}>✏️ Modifier l’animé</Text>
 
               <TextInput
@@ -202,7 +206,7 @@ export default function EditAnimeModal({
             </ScrollView>
           </SafeAreaView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -211,7 +215,6 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: "#fff",

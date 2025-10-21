@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+    KeyboardAvoidingView,
     Modal,
     Platform,
     Pressable,
@@ -76,10 +77,13 @@ export default function EditGameModal({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={styles.sheet}>
           <SafeAreaView style={{ flex: 1 }}>
-            <ScrollView contentContainerStyle={styles.scroll}>
+            <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.heading}>🎮 Modifier le jeu</Text>
 
               <TextInput
@@ -201,7 +205,7 @@ export default function EditGameModal({
             </ScrollView>
           </SafeAreaView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -210,7 +214,6 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
-    justifyContent: "flex-end",
   },
   sheet: {
     backgroundColor: "#fff",

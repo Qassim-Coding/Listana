@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 export default function AddTVShowModal({
@@ -71,8 +73,15 @@ export default function AddTVShowModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.sheet}>
+      <KeyboardAvoidingView 
+        style={styles.overlay} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.sheet}>
           <Text style={styles.heading}>➕ Ajouter une série</Text>
 
           <TextInput
@@ -144,7 +153,8 @@ export default function AddTVShowModal({
             </Pressable>
           </View>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -153,6 +163,9 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "flex-end",
   },
   sheet: {

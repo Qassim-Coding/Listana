@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    FlatList,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditGameModal from "../components/EditGameModal";
@@ -96,7 +96,7 @@ export default function GamesScreen() {
                 sortBy === key && styles.sortTextActive,
               ]}
             >
-              Trier par {key}
+              Trier par {sortLabel(key)}
             </Text>
           </Pressable>
         ))}
@@ -150,6 +150,19 @@ function label(key: string) {
       return "Terminé";
     case "abandoned":
       return "Abandonné";
+    default:
+      return key;
+  }
+}
+
+function sortLabel(key: string) {
+  switch (key) {
+    case "platform":
+      return "plateforme";
+    case "genre":
+      return "genre";
+    case "date":
+      return "date";
     default:
       return key;
   }

@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+    KeyboardAvoidingView,
     Modal,
+    Platform,
     Pressable,
+    ScrollView,
     StyleSheet,
     Text,
     TextInput,
-    View,
+    View
 } from "react-native";
 import { Note } from "../types/note";
 
@@ -41,8 +44,15 @@ export default function EditNoteModal({ visible, initial, onClose, onSubmit }: P
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <KeyboardAvoidingView 
+        style={styles.backdrop} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.sheet}>
           <Text style={styles.title}>{initial ? "Modifier la note" : "Nouvelle note"}</Text>
 
           {/* Titre */}
@@ -73,7 +83,8 @@ export default function EditNoteModal({ visible, initial, onClose, onSubmit }: P
             </Pressable>
           </View>
         </View>
-      </View>
+      </ScrollView>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -82,6 +93,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: "flex-end",
   },
   sheet: {
