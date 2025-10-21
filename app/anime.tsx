@@ -1,7 +1,7 @@
 import { Stack } from "expo-router";
 import { Platform } from "react-native";
-import AnimesScreen from "../src/screens/AnimesScreen";
 import WebBackButton from "../src/components/WebBackButton";
+import AnimesScreen from "../src/screens/AnimesScreen";
 
 const isWeb = Platform.OS === 'web';
 

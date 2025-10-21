@@ -1,22 +1,28 @@
 import { Stack } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, Text } from "react-native";
+import WebBackButton from "../src/components/WebBackButton";
+
+const isWeb = Platform.OS === 'web';
 
 export default function PrivacyPage() {
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: "Confidentialité",
-          headerTintColor: "#12AAB8",
-          headerTitleStyle: {
-            fontFamily: "Poppins_700Bold",
-            fontSize: 22,
-            color: "#111827",
-          },
-        }}
-      />
+      {!isWeb && (
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: "Confidentialité",
+            headerTintColor: "#12AAB8",
+            headerTitleStyle: {
+              fontFamily: "Poppins_700Bold",
+              fontSize: 22,
+              color: "#111827",
+            },
+          }}
+        />
+      )}
+      {isWeb && <WebBackButton title="Confidentialité" />}
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Listana – Politique de confidentialité</Text>
         <Text style={styles.p}>

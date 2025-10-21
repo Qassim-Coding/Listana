@@ -1,5 +1,5 @@
 import React from "react";
-import { Platform, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, ViewStyle } from "react-native";
 
 type Props = {
   emoji: string;
@@ -12,6 +12,8 @@ const isWeb = Platform.OS === 'web';
 
 export default function MediaCard({ emoji, label, onPress, style }: Props) {
   const [isHovered, setIsHovered] = React.useState(false);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768; // Tablette/Desktop
 
   return (
     <Pressable
@@ -21,6 +23,8 @@ export default function MediaCard({ emoji, label, onPress, style }: Props) {
       onMouseLeave={isWeb ? () => setIsHovered(false) : undefined}
       style={({ pressed }) => [
         styles.card,
+        // Largeur adaptative selon la taille d'écran
+        { width: isDesktop ? 240 : "48%" },
         pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 },
         isWeb && isHovered && styles.cardHover,
         style,
@@ -34,7 +38,6 @@ export default function MediaCard({ emoji, label, onPress, style }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    width: isWeb ? 240 : "48%",
     aspectRatio: 1.1,
     backgroundColor: "#F3F4F6",
     borderRadius: 14,

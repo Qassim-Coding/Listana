@@ -1,21 +1,24 @@
 import { Stack } from "expo-router";
 import React, { useState } from "react";
 import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddMovieModal from "../src/components/AddMovieModal";
 import EditMovieModal from "../src/components/EditMovieModal";
 import MovieCard from "../src/components/MovieCard";
+import WebBackButton from "../src/components/WebBackButton";
 import { useMovies } from "../src/hooks/useMovies";
 import { Movie } from "../src/types/movie";
+
+const isWeb = Platform.OS === 'web';
 
 export default function MoviesScreen() {
   const {
@@ -51,19 +54,22 @@ export default function MoviesScreen() {
         keyboardVerticalOffset={insets.top + 8}
       >
         {/* Header natif Expo Router */}
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Mes Films",
-            headerTitleStyle: {
-              fontFamily: "Poppins_700Bold",
-              fontSize: 22,
-              color: "#111827",
-            },
-            headerBackTitleVisible: false,
-            headerTintColor: "#12AAB8",
-          }}
-        />
+        {!isWeb && (
+          <Stack.Screen
+            options={{
+              headerShown: true,
+              title: "Mes Films",
+              headerTitleStyle: {
+                fontFamily: "Poppins_700Bold",
+                fontSize: 22,
+                color: "#111827",
+              },
+              headerBackTitleVisible: false,
+              headerTintColor: "#12AAB8",
+            }}
+          />
+        )}
+        {isWeb && <WebBackButton title="Mes Films" />}
 
         {/* Contenu */}
         {loading ? (

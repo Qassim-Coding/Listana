@@ -1,19 +1,22 @@
 import { Stack } from "expo-router";
 import React, { useState } from "react";
 import {
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
+    FlatList,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddBookModal from "../src/components/AddBookModal";
 import BookCard from "../src/components/BookCard";
+import WebBackButton from "../src/components/WebBackButton";
 import { useBooks } from "../src/hooks/useBooks";
+
+const isWeb = Platform.OS === 'web';
 
 export default function BooksScreen() {
   const {
@@ -44,15 +47,18 @@ export default function BooksScreen() {
         keyboardVerticalOffset={insets.top + 8}
       >
         {/* Native header via Expo Router */}
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Mes Livres",
-            headerTitleStyle: { fontFamily: "Poppins_700Bold", fontSize: 22, color: "#111827" },
-            headerBackTitleVisible: false,
-            headerTintColor: "#12AAB8",
-          }}
-        />
+        {!isWeb && (
+          <Stack.Screen
+            options={{
+              headerShown: true,
+              title: "Mes Livres",
+              headerTitleStyle: { fontFamily: "Poppins_700Bold", fontSize: 22, color: "#111827" },
+              headerBackTitleVisible: false,
+              headerTintColor: "#12AAB8",
+            }}
+          />
+        )}
+        {isWeb && <WebBackButton title="Mes Livres" />}
 
         {/* Contenu */}
         {loading ? (
