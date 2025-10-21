@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import MediaCard from "./MediaCard";
 
 type Item = { key: string; label: string; emoji: string };
@@ -7,6 +7,8 @@ type Props = {
   items: Item[];
   onPick: (key: string) => void;
 };
+
+const isWeb = Platform.OS === 'web';
 
 export default function MediaGrid({ items, onPick }: Props) {
   return (
@@ -27,8 +29,10 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
-    // si "gap" ne marche pas sur ton RN, laisse-le et garde marginBottom sur .card
-    gap: 12,
+    justifyContent: isWeb ? "center" : "space-between",
+    gap: isWeb ? 16 : 12,
+    maxWidth: isWeb ? 1200 : undefined,
+    alignSelf: isWeb ? "center" : undefined,
+    width: isWeb ? "100%" : undefined,
   },
 });

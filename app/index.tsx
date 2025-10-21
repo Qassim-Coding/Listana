@@ -1,8 +1,10 @@
 import { router } from "expo-router";
 import React from "react";
-import { SafeAreaView, ScrollView, StyleSheet, Text } from "react-native";
+import { Platform, SafeAreaView, ScrollView, StyleSheet, Text } from "react-native";
 import MediaGrid from "../src/components/MediaGrid";
 import { MEDIA } from "../src/constants/media";
+
+const isWeb = Platform.OS === 'web';
 
 export default function Home() {
   const onPick = (type: string) => {
@@ -45,24 +47,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
-    paddingBottom: 32,
+    paddingHorizontal: isWeb ? 48 : 24,
+    paddingTop: isWeb ? 48 : 32,
+    paddingBottom: isWeb ? 48 : 32,
+    maxWidth: isWeb ? 1400 : undefined,
+    alignSelf: isWeb ? 'center' : undefined,
+    width: isWeb ? '100%' : undefined,
   },
   title: {
-    fontSize: 32,
+    fontSize: isWeb ? 40 : 32,
     fontWeight: "800",
     textAlign: "center",
     color: "#12AAB8",
     letterSpacing: 0.5,
-    marginBottom: 24,
+    marginBottom: isWeb ? 32 : 24,
     fontFamily: "Poppins_700Bold",
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: isWeb ? 18 : 16,
     textAlign: "center",
     color: "#0E5A90",
-    marginBottom: 28,
+    marginBottom: isWeb ? 40 : 28,
     fontStyle: "italic",
     fontFamily: "Poppins_400Regular",
   },
@@ -70,7 +75,10 @@ const styles = StyleSheet.create({
     color: "#0E5A90",
     textDecorationLine: "underline",
     textAlign: "center",
-    marginTop: 16,
+    marginTop: isWeb ? 24 : 16,
+    fontSize: isWeb ? 15 : 14,
     fontFamily: "Poppins_400Regular",
+    // @ts-ignore - web-only
+    cursor: isWeb ? 'pointer' : undefined,
   },
 });
