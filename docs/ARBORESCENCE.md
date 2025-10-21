@@ -1,237 +1,115 @@
-# Arborescence du projet Listana (à jour)
+# Arborescence du projet Listana (mise à jour)
 
 ```
 .
-├─ app/
-│  ├─ _layout.tsx
-│  ├─ index.tsx
-│  ├─ anime.tsx
-│  ├─ books.tsx
-│  ├─ games.tsx
-│  ├─ manga.tsx
-│  ├─ movies.tsx
-│  ├─ note.tsx
-│  ├─ podcast.tsx
-│  └─ tv.tsx
-│
-├─ src/
-│  ├─ components/
-│  │  ├─ AddAnimeModal.tsx
-│  │  ├─ AddBookModal.tsx
-│  │  ├─ AddMovieModal.tsx
-│  │  ├─ AddTVShowModal.tsx
-│  │  ├─ AnimeCard.tsx
-│  │  ├─ BookCard.tsx
-│  │  ├─ EditAnimeModal.tsx
-│  │  ├─ EditGameModal.tsx
-│  │  ├─ EditMangaModal.tsx
-│  │  ├─ EditMovieModal.tsx
-│  │  ├─ EditNoteModal.tsx
-│  │  ├─ EditPodcastModal.tsx
-│  │  ├─ EditTVShowModal.tsx
-│  │  ├─ GameCard.tsx
-│  │  ├─ MangaCard.tsx
-│  │  ├─ MediaCard.tsx
-│  │  ├─ MediaGrid.tsx
-│  │  ├─ MovieCard.tsx
-│  │  ├─ NoteCard.tsx
-│  │  ├─ PodcastCard.tsx
-│  │  └─ TVShowCard.tsx
-│  │
-│  ├─ screens/
-│  │  ├─ AnimesScreen.tsx
-│  │  ├─ GamesScreen.tsx
-│  │  ├─ MangasScreen.tsx
-│  │  ├─ NotesScreen.tsx
-│  │  ├─ PodcastsScreen.tsx
-│  │  └─ TVShowsScreen.tsx
-│  │
-│  ├─ hooks/
-│  │  ├─ useAnimes.ts
-│  │  ├─ useBooks.ts
-│  │  ├─ useMovies.ts
-│  │  ├─ useStorage.ts
-│  │  └─ useTVShows.ts
-│  │
-│  ├─ constants/
-│  │  └─ media.ts
-│  │
-│  ├─ types/
-│  │  ├─ anime.ts
-│  │  ├─ book.ts
-│  │  ├─ game.ts
-│  │  ├─ manga.ts
-│  │  ├─ movie.ts
-│  │  ├─ note.ts
-│  │  ├─ podcast.ts
-│  │  └─ tvshow.ts
-│  │
-│  ├─ storage/
-│  │  ├─ game.store.ts
-│  │  ├─ manga.store.ts
-│  │  ├─ note.store.ts
-│  │  └─ podcast.store.ts
-│  │
-│  
-│
-├─ assets/
-│  └─ images/
-│     ├─ android-icon-background.png
-│     ├─ android-icon-foreground.png
-│     ├─ android-icon-monochrome.png
-│     ├─ favicon.png
-│     ├─ icon.png
-│     ├─ Listana_Favicon_V1.png
-│     ├─ partial-react-logo.png
-│     ├─ react-logo.png
-│     ├─ react-logo@2x.png
-│     ├─ react-logo@3x.png
-│     └─ splash-icon.png
-│
-├─ app.json
-├─ package.json
-├─ tsconfig.json
-├─ eslint.config.js
-├─ expo-env.d.ts
-└─ README.md
+|-- .expo/
+|-- .github/
+|   |-- workflows/
+|       |-- deploy-web.yml
+|-- .vscode/
+|-- app/
+|   |-- +not-found.tsx
+|   |-- _layout.tsx
+|   |-- anime.tsx
+|   |-- books.tsx
+|   |-- games.tsx
+|   |-- index.tsx
+|   |-- manga.tsx
+|   |-- movies.tsx
+|   |-- note.tsx
+|   |-- podcast.tsx
+|   |-- privacy.tsx
+|   |-- tv.tsx
+|-- app-example/
+|-- assets/
+|   |-- images/
+|       |-- android-icon-background.png
+|       |-- android-icon-foreground.png
+|       |-- android-icon-monochrome.png
+|       |-- favicon.png
+|       |-- icon.png
+|       |-- Listana_Favicon_V1.png
+|       |-- partial-react-logo.png
+|       |-- react-logo.png
+|       |-- react-logo@2x.png
+|       |-- react-logo@3x.png
+|       |-- splash-icon.png
+|-- dist/
+|-- docs/
+|   |-- ARBORESCENCE.md
+|   |-- privacy.md
+|-- scripts/
+|   |-- fix-public-paths.cjs
+|-- src/
+|   |-- components/
+|   |   |-- AddAnimeModal.tsx
+|   |   |-- AddBookModal.tsx
+|   |   |-- AddMovieModal.tsx
+|   |   |-- AddTVShowModal.tsx
+|   |   |-- AnimeCard.tsx
+|   |   |-- BookCard.tsx
+|   |   |-- EditAnimeModal.tsx
+|   |   |-- EditGameModal.tsx
+|   |   |-- EditMangaModal.tsx
+|   |   |-- EditMovieModal.tsx
+|   |   |-- EditNoteModal.tsx
+|   |   |-- EditPodcastModal.tsx
+|   |   |-- EditTVShowModal.tsx
+|   |   |-- GameCard.tsx
+|   |   |-- MangaCard.tsx
+|   |   |-- MediaCard.tsx
+|   |   |-- MediaGrid.tsx
+|   |   |-- MovieCard.tsx
+|   |   |-- NoteCard.tsx
+|   |   |-- PodcastCard.tsx
+|   |   |-- TVShowCard.tsx
+|   |   |-- WebBackButton.tsx
+|   |-- constants/
+|   |   |-- media.ts
+|   |-- hooks/
+|   |   |-- useAnimes.ts
+|   |   |-- useBooks.ts
+|   |   |-- useMovies.ts
+|   |   |-- useStorage.ts
+|   |   |-- useTVShows.ts
+|   |-- screens/
+|   |   |-- AnimesScreen.tsx
+|   |   |-- GamesScreen.tsx
+|   |   |-- MangasScreen.tsx
+|   |   |-- NotesScreen.tsx
+|   |   |-- PodcastsScreen.tsx
+|   |   |-- TVShowsScreen.tsx
+|   |-- storage/
+|   |   |-- game.store.ts
+|   |   |-- manga.store.ts
+|   |   |-- note.store.ts
+|   |   |-- podcast.store.ts
+|   |-- types/
+|       |-- anime.ts
+|       |-- book.ts
+|       |-- game.ts
+|       |-- manga.ts
+|       |-- movie.ts
+|       |-- note.ts
+|       |-- podcast.ts
+|       |-- tvshow.ts
+|-- app.json
+|-- eslint.config.js
+|-- expo-env.d.ts
+|-- package-lock.json
+|-- package.json
+|-- README.md
+|-- tsconfig.json
 ```
 
-## Points notables / Mises à jour récentes
-- Accueil: la tuile affiche « Podcast / Livre audio » (src/constants/media.ts).
-- Podcasts: ajout d’un type `kind` (podcast | audiobook) + filtre de type dans la vue et sélecteur dans la modale d’édition.
-- Boutons d’ajout: style harmonisé « ＋ Ajouter … » (fond bleu, texte blanc) sur Animés, Séries TV, Livres et Films.
-- Jeux vidéo: écran basé sur `src/screens/GamesScreen.tsx` avec `GameCard` et `EditGameModal`.
-- Films/Livres: écrans directement sous `app/movies.tsx` et `app/books.tsx` (avec cartes + modales).
+## Points notables
+- Les écrans `app/*.tsx` partagent un header uniforme : titre noir (`#111827`) couplé à une flèche de retour bleue (`#12AAB8`).
+- `MediaGrid` et `MediaCard` gèrent désormais le survol web, tandis que `WebBackButton` sert de bouton retour dédié sur navigateur.
+- Le workflow GitHub Actions `deploy-web.yml` automatise l’export Expo vers GitHub Pages et applique le script `scripts/fix-public-paths.cjs`.
+- La politique de confidentialité est disponible dans l’app (`app/privacy.tsx`) et en documentation (`docs/privacy.md`).
 
-## Navigation (routes → écrans/composants)
-- `app/index.tsx` → écran d’accueil (grille `MediaGrid`) qui route selon `MEDIA.key` via `router.push('/<key>')`.
-- `app/anime.tsx` → `src/screens/AnimesScreen.tsx`
-- `app/tv.tsx` → `src/screens/TVShowsScreen.tsx`
-- `app/manga.tsx` → `src/screens/MangasScreen.tsx`
-- `app/games.tsx` → `src/screens/GamesScreen.tsx`
-- `app/podcast.tsx` → `src/screens/PodcastsScreen.tsx`
-- `app/movies.tsx` → écran Movies in‑page utilisant `MovieCard`, `AddMovieModal`, `EditMovieModal` et `useMovies`
-- `app/books.tsx` → écran Books in‑page utilisant `BookCard`, `AddBookModal` et `useBooks`
-- `app/note.tsx` → `src/screens/NotesScreen.tsx`
-# Arborescence du projet Listana (à jour)
-
-```
-.
-├─ app/
-│  ├─ _layout.tsx
-│  ├─ index.tsx
-│  ├─ anime.tsx
-│  ├─ books.tsx
-│  ├─ games.tsx
-│  ├─ manga.tsx
-│  ├─ movies.tsx
-│  ├─ note.tsx
-│  ├─ podcast.tsx
-│  ├─ tv.tsx
-│  └─ privacy.tsx
-│
-├─ src/
-│  ├─ components/
-│  │  ├─ AddAnimeModal.tsx
-│  │  ├─ AddBookModal.tsx
-│  │  ├─ AddMovieModal.tsx
-│  │  ├─ AddTVShowModal.tsx
-│  │  ├─ AnimeCard.tsx
-│  │  ├─ BookCard.tsx
-│  │  ├─ EditAnimeModal.tsx
-│  │  ├─ EditGameModal.tsx
-│  │  ├─ EditMangaModal.tsx
-│  │  ├─ EditMovieModal.tsx
-│  │  ├─ EditNoteModal.tsx
-│  │  ├─ EditPodcastModal.tsx
-│  │  ├─ EditTVShowModal.tsx
-│  │  ├─ GameCard.tsx
-│  │  ├─ MangaCard.tsx
-│  │  ├─ MediaCard.tsx
-│  │  ├─ MediaGrid.tsx
-│  │  ├─ MovieCard.tsx
-│  │  ├─ NoteCard.tsx
-│  │  ├─ PodcastCard.tsx
-│  │  └─ TVShowCard.tsx
-│  │
-│  ├─ screens/
-│  │  ├─ AnimesScreen.tsx
-│  │  ├─ GamesScreen.tsx
-│  │  ├─ MangasScreen.tsx
-│  │  ├─ NotesScreen.tsx
-│  │  ├─ PodcastsScreen.tsx
-│  │  └─ TVShowsScreen.tsx
-│  │
-│  ├─ hooks/
-│  │  ├─ useAnimes.ts
-│  │  ├─ useBooks.ts
-│  │  ├─ useMovies.ts
-│  │  ├─ useStorage.ts
-│  │  └─ useTVShows.ts
-│  │
-│  ├─ constants/
-│  │  └─ media.ts
-│  │
-│  ├─ types/
-│  │  ├─ anime.ts
-│  │  ├─ book.ts
-│  │  ├─ game.ts
-│  │  ├─ manga.ts
-│  │  ├─ movie.ts
-│  │  ├─ note.ts
-│  │  ├─ podcast.ts
-│  │  └─ tvshow.ts
-│  │
-│  ├─ storage/
-│  │  ├─ game.store.ts
-│  │  ├─ manga.store.ts
-│  │  ├─ note.store.ts
-│  │  └─ podcast.store.ts
-│
-├─ assets/
-│  └─ images/
-│     ├─ android-icon-background.png
-│     ├─ android-icon-foreground.png
-│     ├─ android-icon-monochrome.png
-│     ├─ favicon.png
-│     ├─ icon.png
-│     ├─ Listana_Favicon_V1.png
-│     ├─ partial-react-logo.png
-│     ├─ react-logo.png
-│     ├─ react-logo@2x.png
-│     ├─ react-logo@3x.png
-│     └─ splash-icon.png
-│
-├─ .github/
-│  └─ workflows/
-│     └─ deploy-web.yml
-├─ docs/
-│  ├─ ARBORESCENCE.md
-│  └─ privacy.md
-│
-├─ app.json
-├─ package.json
-├─ tsconfig.json
-├─ eslint.config.js
-├─ expo-env.d.ts
-└─ README.md
-```
-
-## Points notables / Mises à jour récentes
-- Accueil: la tuile affiche « Podcast / Livre audio » et les libellés/emoji ont été nettoyés.
-- Podcasts: ajout d’un type `kind` (podcast | audiobook) + filtre de type dans la vue et sélecteur dans la modale d’édition.
-- Boutons d’ajout: style harmonisé « ＋ Ajouter … » (fond bleu, texte blanc) sur Animés, Séries TV, Livres et Films.
-- GitHub Pages: workflow ajouté (`.github/workflows/deploy-web.yml`), export web prêt avec `EXPO_PUBLIC_URL` et historique “hash”.
-- Page confidentialité: `app/privacy.tsx` (in‑app) et `docs/privacy.md` (doc).
-
-## Navigation (routes → écrans/composants)
-- `app/index.tsx` → Accueil (grille `MediaGrid`), route via `MEDIA.key` avec `router.push('/<key>')`.
-- `app/anime.tsx` → `src/screens/AnimesScreen.tsx`
-- `app/tv.tsx` → `src/screens/TVShowsScreen.tsx`
-- `app/manga.tsx` → `src/screens/MangasScreen.tsx`
-- `app/games.tsx` → `src/screens/GamesScreen.tsx`
-- `app/podcast.tsx` → `src/screens/PodcastsScreen.tsx`
-- `app/movies.tsx` → Écran Films (cartes + modales intégrés)
-- `app/books.tsx` → Écran Livres (cartes + modales intégrés)
-- `app/note.tsx` → `src/screens/NotesScreen.tsx`
-- `app/privacy.tsx` → Politique de confidentialité
+## Navigation (rappel)
+- `app/index.tsx` : accueil et grille `MediaGrid`, navigation via `router.push`.
+- `app/anime.tsx`, `app/tv.tsx`, `app/manga.tsx`, `app/games.tsx`, `app/podcast.tsx`, `app/note.tsx` : ponts vers les écrans dédiés de `src/screens`.
+- `app/movies.tsx` et `app/books.tsx` : écrans complets avec filtres, cartes et modales intégrées.
+- `app/privacy.tsx` : écran Politique de confidentialité accessible depuis la page d’accueil.
