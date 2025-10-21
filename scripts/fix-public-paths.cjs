@@ -21,13 +21,19 @@ function rewriteHtml(html, fileName) {
 
   updated = updated.replace(/(=)(["'])\/favicon\.ico/g, (_, eq, quote) => `${eq}${quote}${PUBLIC_PREFIX}/favicon.ico`);
 
-  if (fileName === 'index.html' && !updated.includes(HASH_SNIPPET_ID)) {
+  // Injecter le script dans TOUS les fichiers HTML, pas juste index.html
+  if (!updated.includes(HASH_SNIPPET_ID)) {
     // Force le chemin complet /Listana/#/ ET empêche Expo Router de modifier l'URL
     const snippet = `<script id="${HASH_SNIPPET_ID}">
 (function(){
-  // Force le hash initial
-  if(!location.hash||location.hash==="#"){
-    location.replace("${PUBLIC_PREFIX}/#/");
+  // Force le hash initial si on est sur une page directe
+  const path = window.location.pathname.replace("${PUBLIC_PREFIX}", "").replace(/\\.html$/, "");
+  if(!location.hash || location.hash==="#"){
+    if(path && path !== "/" && path !== ""){
+      location.replace("${PUBLIC_PREFIX}/#" + path);
+    } else {
+      location.replace("${PUBLIC_PREFIX}/#/");
+    }
   }
   // Intercepte les changements d'URL pour garder /Listana/ dans le path
   if(typeof window !== 'undefined' && window.history){
