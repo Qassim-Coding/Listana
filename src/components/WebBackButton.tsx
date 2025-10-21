@@ -22,7 +22,6 @@ export default function WebBackButton({ title }: Props) {
         ]}
       >
         <Text style={styles.backArrow}>←</Text>
-        <Text style={styles.backText}>Retour</Text>
       </Pressable>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.spacer} />
@@ -48,9 +47,8 @@ const styles = StyleSheet.create({
   backButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
     // @ts-ignore - web-only
     cursor: "pointer",
@@ -61,14 +59,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
   },
   backArrow: {
-    fontSize: 24,
+    fontSize: 28,
     color: "#12AAB8",
     fontWeight: "bold",
-  },
-  backText: {
-    fontSize: 16,
-    color: "#12AAB8",
-    fontFamily: "Poppins_600SemiBold",
   },
   title: {
     fontSize: 20,
