@@ -22,8 +22,34 @@ function rewriteHtml(html, fileName) {
   updated = updated.replace(/(=)(["'])\/favicon\.ico/g, (_, eq, quote) => `${eq}${quote}${PUBLIC_PREFIX}/favicon.ico`);
 
   if (fileName === 'index.html' && !updated.includes(HASH_SNIPPET_ID)) {
-    // Force le chemin complet /Listana/#/ pour éviter la redirection vers la racine
-    const snippet = `<script id="${HASH_SNIPPET_ID}">(function(){if(!location.hash||location.hash==="#"){location.replace("${PUBLIC_PREFIX}/#/");}})();</script>`;
+    // Force le chemin complet /Listana/#/ ET empêche Expo Router de modifier l'URL
+    const snippet = `<script id="${HASH_SNIPPET_ID}">
+(function(){
+  // Force le hash initial
+  if(!location.hash||location.hash==="#"){
+    location.replace("${PUBLIC_PREFIX}/#/");
+  }
+  // Intercepte les changements d'URL pour garder /Listana/ dans le path
+  if(typeof window !== 'undefined' && window.history){
+    const originalPushState = window.history.pushState;
+    const originalReplaceState = window.history.replaceState;
+    
+    window.history.pushState = function(state, title, url) {
+      if(url && !url.startsWith("${PUBLIC_PREFIX}") && url.startsWith("/")){
+        url = "${PUBLIC_PREFIX}" + url;
+      }
+      return originalPushState.call(this, state, title, url);
+    };
+    
+    window.history.replaceState = function(state, title, url) {
+      if(url && !url.startsWith("${PUBLIC_PREFIX}") && url.startsWith("/")){
+        url = "${PUBLIC_PREFIX}" + url;
+      }
+      return originalReplaceState.call(this, state, title, url);
+    };
+  }
+})();
+</script>`;
     updated = updated.replace('</head>', `${snippet}</head>`);
   }
 
