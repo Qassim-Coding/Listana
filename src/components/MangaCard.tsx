@@ -1,6 +1,5 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { progressPct } from "../storage/manga.store";
 import { Manga } from "../types/manga";
 
 type Props = {
@@ -8,10 +7,18 @@ type Props = {
   selected?: boolean;
   onSelect: (manga: Manga) => void;
   onDuplicate?: (manga: Manga) => void;
+  onRemove?: (manga: Manga) => void;
 };
 
-export default function MangaCard({ item, selected, onSelect, onDuplicate }: Props) {
-  const progress = progressPct(item);
+export default function MangaCard({ item, selected, onSelect, onDuplicate, onRemove }: Props) {
+  // Détermine le dernier chapitre/tome lu
+  const lastRead = item.lastChapter 
+    ? item.lastChapter 
+    : item.chapterNumber 
+    ? `Chapitre ${item.chapterNumber}` 
+    : item.volumeNumber 
+    ? `Tome ${item.volumeNumber}` 
+    : "Non renseigné";
 
   return (
     <Pressable
@@ -28,29 +35,33 @@ export default function MangaCard({ item, selected, onSelect, onDuplicate }: Pro
 
       {/* Série + volume/chapitre */}
       <Text style={styles.subtitle}>
-        {item.series ? `${item.series} • ` : ""}
-        {item.chapterNumber
-          ? `Chapitre ${item.chapterNumber}`
-          : `Tome ${item.volumeNumber ?? "?"}`}
+        {item.series ? `${item.series}` : "Auteur inconnu"}
       </Text>
 
-      {/* Barre de progression */}
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${progress}%` }]} />
+      {/* Dernier chapitre/tome lu */}
+      <Text style={styles.lastReadText}>
+        Dernier lu : {lastRead}
+      </Text>
+
+      {/* Actions */}
+      <View style={styles.actionsRow}>
+        {onDuplicate && (
+          <Pressable
+            style={[styles.actionBtn, styles.ghost]}
+            onPress={() => onDuplicate(item)}
+          >
+            <Text style={styles.actionText}>📑 Dupliquer</Text>
+          </Pressable>
+        )}
+        {onRemove && (
+          <Pressable
+            style={[styles.actionBtn, { backgroundColor: "#EF4444" }]}
+            onPress={() => onRemove(item)}
+          >
+            <Text style={[styles.actionText, { color: "#fff" }]}>🗑️ Supprimer</Text>
+          </Pressable>
+        )}
       </View>
-      <Text style={styles.progressText}>
-        {item.pagesRead || 0} / {item.pagesTotal || 0} pages • {progress}%
-      </Text>
-
-      {/* Bouton dupliquer (optionnel) */}
-      {onDuplicate && (
-        <Pressable
-          style={styles.duplicateBtn}
-          onPress={() => onDuplicate(item)}
-        >
-          <Text style={styles.duplicateText}>📑 Dupliquer</Text>
-        </Pressable>
-      )}
     </Pressable>
   );
 }
@@ -86,32 +97,32 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 12,
     color: "#374151",
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  progressBar: {
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 4,
-    overflow: "hidden",
+  lastReadText: {
+    fontSize: 12,
+    color: "#12AAB8",
+    fontWeight: "600",
+    marginBottom: 8,
   },
-  progressFill: {
-    height: 6,
-    backgroundColor: "#12AAB8",
-  },
-  progressText: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  duplicateBtn: {
+  actionsRow: {
+    flexDirection: "row",
+    gap: 8,
     marginTop: 8,
+    flexWrap: "wrap",
+  },
+  actionBtn: {
     paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 10,
+    borderRadius: 8,
     alignItems: "center",
   },
-  duplicateText: {
+  ghost: {
+    backgroundColor: "#F3F4F6",
+  },
+  actionText: {
     fontSize: 12,
     color: "#111827",
+    fontWeight: "600",
   },
 });

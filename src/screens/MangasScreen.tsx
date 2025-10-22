@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditMangaModal from "../components/EditMangaModal";
 import MangaCard from "../components/MangaCard";
 import {
     addManga,
+    deleteManga,
     duplicateMangaFrom,
     getMangas,
     searchMangas,
@@ -11,7 +13,6 @@ import {
     updateManga,
 } from "../storage/manga.store";
 import { Manga } from "../types/manga";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MangasScreen() {
   const insets = useSafeAreaInsets();
@@ -116,7 +117,11 @@ export default function MangasScreen() {
             item={item}
             selected={false}
             onSelect={() => handleEdit(item)}
-            onDuplicate={() => handleDuplicate(item)} // ✅ branchage actif
+            onDuplicate={() => handleDuplicate(item)}
+            onRemove={() => {
+              deleteManga(item.id);
+              setMangas(getMangas());
+            }}
           />
         )}
       />

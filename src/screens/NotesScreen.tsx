@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditNoteModal from "../components/EditNoteModal";
 import NoteCard from "../components/NoteCard";
 import {
-  addNote,
-  duplicateNoteFrom,
-  getNotes,
-  initNotes,
-  searchNotes,
-  sortNotes,
-  updateNote,
-  deleteNote,
+    addNote,
+    deleteNote,
+    duplicateNoteFrom,
+    getNotes,
+    initNotes,
+    searchNotes,
+    sortNotes,
+    updateNote,
 } from "../storage/note.store";
 import { Note } from "../types/note";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function NotesScreen() {
   const insets = useSafeAreaInsets();
@@ -27,6 +27,7 @@ export default function NotesScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"date" | "modification">("modification");
 
   function handleAdd() {
     setEditingNote(null);
@@ -64,7 +65,9 @@ export default function NotesScreen() {
 
   // 🔎 Recherche + tri
   const filtered = query ? searchNotes(notes, query) : notes;
-  const sortedNotes = sortNotes(filtered);
+  const sortedNotes = sortBy === "modification" 
+    ? sortNotes(filtered) 
+    : [...filtered].filter((n) => !n.archived).sort((a, b) => b.createdAt - a.createdAt);
 
   return (
     <View style={styles.container}>
@@ -77,6 +80,21 @@ export default function NotesScreen() {
         placeholder="Rechercher une note..."
         style={styles.searchInput}
       />
+
+      {/* Tri */}
+      <View style={styles.row}>
+        {["modification", "date"].map((key) => (
+          <Pressable
+            key={key}
+            onPress={() => setSortBy(key as any)}
+            style={[styles.sortBtn, sortBy === key && styles.sortBtnActive]}
+          >
+            <Text style={[styles.sortText, sortBy === key && styles.sortTextActive]}>
+              Trier par {key === "modification" ? "modification" : "date de création"}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
       {/* Liste */}
       {sortedNotes.length === 0 ? (
@@ -136,6 +154,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 14,
     backgroundColor: "#FAFAFA",
+  },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 12,
+  },
+  sortBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    backgroundColor: "#F3F4F6",
+  },
+  sortBtnActive: {
+    backgroundColor: "#0EA5E9",
+  },
+  sortText: {
+    fontSize: 12,
+    color: "#333",
+  },
+  sortTextActive: {
+    color: "#fff",
+    fontWeight: "600",
   },
   addBtn: {
     backgroundColor: "#12AAB8",

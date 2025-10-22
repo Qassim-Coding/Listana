@@ -10,9 +10,45 @@ Listana est une app simple et fun pour suivre tout ce que vous regardez, lisez, 
 
 ## Fonctionnalités actuelles
 - Animés, Séries TV, Films, Livres, Mangas, Jeux vidéo, Podcasts/Livres audio, Bloc‑notes.
-- Ajout/édition via des modales conçues pour aller à l’essentiel.
+- Ajout/édition via des modales conçues pour aller à l'essentiel.
 - Filtres par statut (à voir/lire/écouter, en cours, terminé, abandonné) et tri par date/titre/statut.
-- Calcul et affichage de progression (barres, pourcentages, pages/minutes/épisodes)..
+- Calcul et affichage de progression (barres, pourcentages, pages/minutes/épisodes).
+
+## Récentes améliorations (Version 1.2) 🎉
+
+### 🎨 Design & UX
+- **Responsive design perfectionné**: L'interface s'adapte maintenant parfaitement aux écrans mobiles, tablettes et desktop
+- **Cartes homepage améliorées**: Affichage correct des titres longs ("Séries TV", "Jeux vidéo", "Bloc-Notes,etc.") sur mobile avec support multi-lignes
+- **HomePage optimisée**: Meilleure gestion des espacements et de la grille selon la taille d'écran
+
+### ⌨️ Formulaires & Modals
+- **Correction majeure du clavier mobile**: Les formulaires d'ajout/édition remontent maintenant automatiquement quand le clavier apparaît
+- **KeyboardAvoidingView intégré**: Tous les modaux (Films, Séries, Livres, Animés, Mangas, Jeux, Podcasts, Notes) bénéficient du système de scroll intelligent
+- **Plus de champs cachés**: Tous les champs restent visibles et accessibles pendant la saisie
+
+### 📚 Manga
+- **Affichage intelligent**: Support de la lecture par chapitres OU par tomes (selon votre mode de lecture)
+
+- **Bouton supprimer ajouté**: Cohérence avec les autres vues (bouton rouge 🗑️)
+
+### 🎮 Jeux vidéo
+- **Traduction française**: "Trier par plateforme" au lieu de "platform"
+
+### 📝 Bloc-notes
+- **Système de tri ajouté**: 
+  - Trier par modification (par défaut)
+  - Trier par date de création
+- **Meilleure organisation**: Retrouvez facilement vos notes récentes ou anciennes
+
+### 🌐 Version Web
+- **Navigation améliorée**: Bouton retour personnalisé pour la navigation web
+- **GitHub Pages optimisé**: Gestion correcte des URLs et du routing hash
+- **Design responsive**: Expérience cohérente entre mobile web et desktop
+
+### 🔧 Corrections techniques
+- **Performance**: Optimisation du rendu des listes
+- **Stabilité**: Corrections de bugs mineurs sur les filtres et le tri
+- **Code**: Amélioration de la structure et de la maintenabilité
 
 ## Bientôt (roadmap)
 - Intégrations d’API pour enrichir et illustrer automatiquement vos listes: affiches, jaquettes, métadonnées, etc.
