@@ -1,27 +1,18 @@
 import { Stack } from "expo-router";
-import React from "react";
 import { Platform } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
 import MangasScreen from "../src/screens/MangasScreen";
+import { makeHeaderOptions } from "../src/theme";
+import { useTheme } from "../src/ThemeContext";
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
 export default function MangaPage() {
+  const t = useTheme();
   return (
     <>
       {!isWeb && (
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Mangas",
-            headerTintColor: "#12AAB8",
-            headerTitleStyle: {
-              fontFamily: "Poppins_700Bold",
-              fontSize: 22,
-              color: "#111827",
-            },
-          }}
-        />
+        <Stack.Screen options={{ ...makeHeaderOptions(t), title: "Mangas" }} />
       )}
       {isWeb && <WebBackButton title="Mangas" />}
       <MangasScreen />

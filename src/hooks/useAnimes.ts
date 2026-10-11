@@ -1,9 +1,31 @@
-// src/hooks/useAnimes.ts
 import { useEffect, useMemo, useState } from "react";
-import { loadJSON, saveJSON } from "./useStorage";
 import { Anime, AnimeStatus } from "../types/anime";
+import { loadJSON, saveJSON } from "./useStorage";
 
 const STORAGE_KEY = "listana.animes.v1";
+
+export const ANIME_STATUS_LABEL: Record<AnimeStatus, string> = {
+  planning: "À voir",
+  watching: "En cours",
+  done: "Terminé",
+  dropped: "Abandonné",
+};
+
+// Valeurs écrites par l'ancien formulaire d'édition, converties au chargement
+const LEGACY_STATUS: Record<string, AnimeStatus> = {
+  toWatch: "planning",
+  completed: "done",
+  abandoned: "dropped",
+};
+
+function normalize(a: Anime): Anime {
+  const fixed = LEGACY_STATUS[a.status as string];
+  return fixed ? { ...a, status: fixed } : a;
+}
+
+export type NewAnime = Omit<Anime, "id" | "updatedAt" | "status"> & {
+  status?: AnimeStatus;
+};
 
 export function useAnimes() {
   const [animes, setAnimes] = useState<Anime[]>([]);
@@ -14,7 +36,7 @@ export function useAnimes() {
   useEffect(() => {
     (async () => {
       const data = await loadJSON<Anime[]>(STORAGE_KEY, []);
-      setAnimes(data);
+      setAnimes(data.map(normalize));
       setLoading(false);
     })();
   }, []);
@@ -25,30 +47,28 @@ export function useAnimes() {
 
   const visibleAnimes = useMemo(() => {
     const filtered = animes.filter((a) => (filter === "all" ? true : a.status === filter));
-    const sorted = [...filtered].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       if (sort === "title") return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
       if (sort === "status") return a.status.localeCompare(b.status);
-      return b.updatedAt - a.updatedAt; // date desc
+      return b.updatedAt - a.updatedAt;
     });
-    return sorted;
   }, [animes, filter, sort]);
 
-  function addAnime(data: Omit<Anime, "id" | "updatedAt" | "status">) {
+  function addAnime(data: NewAnime) {
     const now = Date.now();
+    const { status, ...rest } = data;
     const newAnime: Anime = {
-      ...data,
+      ...rest,
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
-      status: "planning",
+      status: status ?? (rest.currentEpisode > 0 ? "watching" : "planning"),
       updatedAt: now,
-    } as Anime; // assume required fields provided by modal
+    };
     setAnimes((prev) => [newAnime, ...prev]);
   }
 
   function updateAnime(id: string, changes: Partial<Anime>) {
     setAnimes((prev) =>
-      prev.map((a) =>
-        a.id === id ? { ...a, ...changes, updatedAt: Date.now() } : a
-      )
+      prev.map((a) => (a.id === id ? { ...a, ...changes, updatedAt: Date.now() } : a))
     );
   }
 
@@ -61,35 +81,31 @@ export function useAnimes() {
   }
 
   function incrementEpisode(id: string) {
-    setAnimes((prev) => {
-      const arr = prev.map((a) => {
+    setAnimes((prev) =>
+      prev.map((a): Anime => {
         if (a.id !== id) return a;
         const total = a.totalEpisodes;
         if (total && a.currentEpisode >= total) {
-          // Déjà au maximum: ne pas dépasser; marquer terminé si pas déjà fait
-          if (a.status !== "done") {
-            return {
-              ...a,
-              status: "done",
-              endedAt: a.endedAt ?? new Date().toISOString(),
-              updatedAt: Date.now(),
-            };
-          }
-          return a; // aucun changement
+          if (a.status === "done") return a;
+          return {
+            ...a,
+            status: "done",
+            endedAt: a.endedAt ?? new Date().toISOString(),
+            updatedAt: Date.now(),
+          };
         }
-
-        const next = a.currentEpisode + 1;
-        const clamped = total ? Math.min(next, total) : next;
-        const isDone = !!total && clamped >= total;
+        const next = total ? Math.min(a.currentEpisode + 1, total) : a.currentEpisode + 1;
+        const isDone = !!total && next >= total;
         return {
           ...a,
-          currentEpisode: clamped,
-          ...(isDone ? { status: "done", endedAt: a.endedAt ?? new Date().toISOString() } : {}),
+          currentEpisode: next,
+          status: isDone ? "done" : a.status === "planning" ? "watching" : a.status,
+          endedAt: isDone ? a.endedAt ?? new Date().toISOString() : a.endedAt,
+          startedAt: a.startedAt ?? new Date().toISOString(),
           updatedAt: Date.now(),
         };
-      });
-      return arr;
-    });
+      })
+    );
   }
 
   function startEpisode(id: string) {

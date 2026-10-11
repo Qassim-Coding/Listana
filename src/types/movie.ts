@@ -6,7 +6,7 @@ export type Movie = {
   runtime?: number; // durée en minutes
   progressMinutes?: number;
   status: "planning" | "watching" | "done" | "dropped";
-  startedAt?: string;
+  startedAt?: string; // date ISO
   rating?: number; // 0-5
   review?: string;
   tags?: string[];
@@ -18,6 +18,5 @@ export type Movie = {
   lastSyncedAt?: number;
   dirty?: boolean;
   updatedAt: number;
-  startedAt?: number;
   finishedAt?: number;
 };

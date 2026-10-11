@@ -1,35 +1,21 @@
 import { Stack } from "expo-router";
-import React from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
 import PodcastsScreen from "../src/screens/PodcastsScreen";
+import { makeHeaderOptions } from "../src/theme";
+import { useTheme } from "../src/ThemeContext";
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
 export default function PodcastPage() {
+  const t = useTheme();
   return (
     <>
       {!isWeb && (
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Podcast / Livre audio",
-            headerTintColor: "#12AAB8",
-            headerTitleStyle: {
-              fontFamily: "Poppins_700Bold",
-              fontSize: 22,
-              color: "#111827",
-            },
-          }}
-        />
+        <Stack.Screen options={{ ...makeHeaderOptions(t), title: "Podcasts & livres audio" }} />
       )}
-      {isWeb && <WebBackButton title="Podcast / Livre audio" />}
+      {isWeb && <WebBackButton title="Podcasts & livres audio" />}
       <PodcastsScreen />
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  text: { fontSize: 22, fontFamily: "Poppins_600SemiBold", color: "#111827" },
-});

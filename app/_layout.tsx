@@ -7,6 +7,7 @@ import {
 import { Stack } from "expo-router";
 import React from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ThemeProvider } from "../src/ThemeContext";
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -17,13 +18,15 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          // Allow rendering even before custom fonts are ready.
-          animation: fontsLoaded ? "default" : "none",
-        }}
-      />
+      <ThemeProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            // Allow rendering even before custom fonts are ready.
+            animation: fontsLoaded ? "default" : "none",
+          }}
+        />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

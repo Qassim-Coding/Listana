@@ -1,168 +1,131 @@
-// src/components/TVShowCard.tsx
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { TV_STATUS_LABEL } from "../hooks/useTVShows";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { TVShow } from "../types/tvshow";
 
 type Props = {
   show: TVShow;
   onEdit: (show: TVShow) => void;
-  onRemove: (id: string) => void;
-  onMarkDone: (id: string) => void;
-  onIncrementEpisode: (id: string) => void; // +1 épisode
-  onStartEpisode?: (id: string) => void; // pour enregistrer l’annotation "commencé le" sur l’épisode courant (optionnel)
+  onIncrementEpisode: (id: string) => void;
 };
 
-export default function TVShowCard({
-  show,
-  onEdit,
-  onRemove,
-  onMarkDone,
-  onIncrementEpisode,
-  onStartEpisode,
-}: Props) {
-  // Progression saison (Episode X / Y → barre %)
-  const hasSeasonData = !!show.episodesPerSeason && show.episodesPerSeason > 0;
-  const seasonPercent = hasSeasonData
-    ? Math.min(100, Math.round((show.currentEpisode / show.episodesPerSeason) * 100))
-    : 0;
+const pad = (n: number) => String(n).padStart(2, "0");
 
-  // Progression globale (si totalSeasons existe) — optionnelle
-  // Ici on reste minimal pour le MVP: affichage indicatif seulement
-  const globalLabel =
-    show.totalSeasons ? `Saison ${show.currentSeason}/${show.totalSeasons}` : `Saison ${show.currentSeason}`;
+export default function TVShowCard({ show, onEdit, onIncrementEpisode }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const color = t.media.tv;
+  const per = show.episodesPerSeason || 0;
+  const season = show.currentSeason || 1;
+  const episode = show.currentEpisode ?? 0;
+  const done = show.status === "done";
+  const pct = per > 0 ? Math.min(100, Math.round((episode / per) * 100)) : null;
+  const initial = show.title.trim().charAt(0).toUpperCase();
 
-  const startedLabel = show.startedAt
-    ? `Commencée le ${new Date(show.startedAt).toLocaleDateString()}`
-    : undefined;
+  const seasonLabel = show.totalSeasons ? `Saison ${season} / ${show.totalSeasons}` : `Saison ${season}`;
+  const episodeLabel = per > 0 ? `Ép. ${episode} / ${per}` : `Ép. ${episode}`;
 
-  const nextEpisodeLabel = hasSeasonData
-    ? `Prochain: S${pad(show.currentSeason)}E${pad(Math.min(show.currentEpisode + 1, show.episodesPerSeason))}`
-    : `Épisode ${show.currentEpisode + 1}`;
+  let next = "";
+  if (!done) {
+    if (per > 0 && episode >= per) {
+      const isLast = !!show.totalSeasons && season >= show.totalSeasons;
+      next = isLast ? "" : `Prochain : S${pad(season + 1)}E01`;
+    } else {
+      next = `Prochain : S${pad(season)}E${pad(episode + 1)}`;
+    }
+  }
+
+  const meta = `${show.year ? `${show.year} · ` : ""}${TV_STATUS_LABEL[show.status] ?? ""}`;
 
   return (
-    <View style={styles.card}>
-      <View style={{ flex: 1 }}>
-        {/* Titre */}
-        <Text style={styles.title}>
-          {show.title} {show.year ? `(${show.year})` : ""}
-        </Text>
-
-        {/* Dates et statut minimal */}
-        {startedLabel && <Text style={styles.meta}>{startedLabel}</Text>}
-
-        {/* Notes plus généreuses */}
-        {show.review ? <Text style={styles.review}>{show.review}</Text> : null}
-
-        {/* Progression Saison: X / Y + barre */}
-        <Text style={styles.sectionHeading}>{globalLabel}</Text>
-        {hasSeasonData ? (
-          <>
-            <View style={styles.progressContainer}>
-              <View style={[styles.progressBar, { width: `${seasonPercent}%` }]} />
-            </View>
-            <View style={styles.progressMetaRow}>
-              <Text style={styles.pages}>
-                Épisode {show.currentEpisode}/{show.episodesPerSeason}
-              </Text>
-              <Text style={styles.percent}>{seasonPercent}%</Text>
-            </View>
-          </>
-        ) : (
-          <Text style={styles.pages}>Épisode {show.currentEpisode}</Text>
-        )}
-
-        {/* Prochain épisode */}
-        <Text style={styles.next}>{nextEpisodeLabel}</Text>
-
-        {/* Actions rapides épisode */}
-        <View style={styles.row}>
-          {onStartEpisode && (
-            <Pressable style={[styles.btn, styles.btnGhost]} onPress={() => onStartEpisode(show.id)}>
-              <Text style={[styles.btnText, { color: "#0E5A90" }]}>Commencer l’épisode</Text>
-            </Pressable>
-          )}
-          <Pressable style={[styles.btn, { backgroundColor: "#12AAB8" }]} onPress={() => onIncrementEpisode(show.id)}>
-            <Text style={styles.btnText}>+1 épisode vu</Text>
-          </Pressable>
-        </View>
-
-        {/* Boutons gestion */}
-        <View style={[styles.row, { marginTop: 8 }]}>
-          <Pressable style={[styles.btn, { backgroundColor: "#16A34A" }]} onPress={() => onMarkDone(show.id)}>
-            <Text style={styles.btnText}>Terminer</Text>
-          </Pressable>
-
-          <Pressable style={[styles.btn, { backgroundColor: "#12AAB8" }]} onPress={() => onEdit(show)}>
-            <Text style={styles.btnText}>Éditer</Text>
-          </Pressable>
-
-          <Pressable style={[styles.btn, { backgroundColor: "#EF4444" }]} onPress={() => onRemove(show.id)}>
-            <Text style={styles.btnText}>🗑️</Text>
-          </Pressable>
-        </View>
+    <Pressable
+      onPress={() => onEdit(show)}
+      accessibilityRole="button"
+      accessibilityLabel={`Modifier ${show.title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
+      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
+        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
       </View>
-    </View>
+
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {show.title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+        <Text style={[styles.progress, { color }]} numberOfLines={1}>
+          {seasonLabel} · {episodeLabel}
+        </Text>
+        {pct !== null && (
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+          </View>
+        )}
+        {next ? <Text style={styles.next}>{next}</Text> : null}
+      </View>
+
+      {done ? (
+        <View style={styles.doneBadge} accessibilityLabel="Terminée">
+          <Ionicons name="checkmark" size={20} color={t.textMuted} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => onIncrementEpisode(show.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Ajouter un épisode à ${show.title}`}
+          hitSlop={8}
+          style={styles.plusBtn}
+        >
+          <Text style={styles.plusText}>+1</Text>
+        </Pressable>
+      )}
+    </Pressable>
   );
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, "0");
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
+    body: { flex: 1, minWidth: 0 },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    meta: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 2 },
+    progress: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), marginTop: 8 },
+    track: { height: 5, borderRadius: 3, backgroundColor: t.track, marginTop: 6, overflow: "hidden" },
+    fill: { height: 5, borderRadius: 3 },
+    next: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 6 },
+    plusBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    plusText: { fontFamily: t.fonts.bold, fontSize: t.fs(14), color: t.onAccent },
+    doneBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.cardAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
 }
-
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  title: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
-    color: "#111827",
-    marginBottom: 2,
-  },
-  meta: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 6,
-    fontFamily: "Poppins_400Regular",
-  },
-  review: {
-    fontSize: 13,
-    color: "#374151",
-    marginBottom: 8,
-    fontFamily: "Poppins_400Regular",
-  },
-  sectionHeading: {
-    fontSize: 13,
-    color: "#0E5A90",
-    fontFamily: "Poppins_600SemiBold",
-    marginBottom: 4,
-  },
-  progressContainer: {
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBar: { height: "100%", backgroundColor: "#12AAB8" },
-  progressMetaRow: {
-    marginTop: 4,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  pages: { fontSize: 13, color: "#374151" },
-  percent: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#0E5A90" },
-  next: { fontSize: 12, color: "#6B7280", marginTop: 4, fontFamily: "Poppins_400Regular" },
-  row: { flexDirection: "row", gap: 8 },
-  btn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
-  btnGhost: { backgroundColor: "#E0F2FE" },
-  btnText: { color: "#FFFFFF", fontFamily: "Poppins_600SemiBold" },
-});

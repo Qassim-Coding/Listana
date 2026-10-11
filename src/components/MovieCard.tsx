@@ -1,174 +1,125 @@
-// src/components/MovieCard.tsx
-import React, { useState } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { MOVIE_STATUS_LABEL } from "../hooks/useMovies";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Movie } from "../types/movie";
 
 type Props = {
   movie: Movie;
-  onUpdateProgress: (id: string, minutes: number) => void;
-  onMarkDone: (id: string) => void;
-  onRemove: (id: string) => void;
-  onEdit?: (movie: Movie) => void; // ouvre la modale d'édition
+  onEdit: (movie: Movie) => void;
+  onUpdateProgress: (movie: Movie) => void;
 };
 
-export default function MovieCard({ movie, onUpdateProgress, onMarkDone, onRemove, onEdit }: Props) {
-  const [progressInput, setProgressInput] = useState(movie.progressMinutes?.toString() ?? "");
+export default function MovieCard({ movie, onEdit, onUpdateProgress }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const color = t.media.movie;
+  const watched = movie.progressMinutes ?? 0;
+  const runtime = movie.runtime;
+  const done = movie.status === "done";
+  const pct = runtime ? Math.min(100, Math.round((watched / runtime) * 100)) : null;
+  const initial = movie.title.trim().charAt(0).toUpperCase();
 
-  const percent =
-    movie.runtime && movie.runtime > 0
-      ? Math.min(100, Math.round(((movie.progressMinutes ?? 0) / movie.runtime) * 100))
-      : undefined;
+  let progressText = "Pas encore commencé";
+  if (done && movie.finishedAt) {
+    progressText = `Terminé le ${new Date(movie.finishedAt).toLocaleDateString("fr-FR")}`;
+  } else if (done) {
+    progressText = "Terminé";
+  } else if (runtime) {
+    progressText = `${watched} / ${runtime} min`;
+  } else if (watched > 0) {
+    progressText = `${watched} min vues`;
+  }
+
+  const meta = `${movie.year ? `${movie.year} · ` : ""}${MOVIE_STATUS_LABEL[movie.status] ?? ""}`;
 
   return (
-    <View style={styles.card}>
+    <Pressable
+      onPress={() => onEdit(movie)}
+      accessibilityRole="button"
+      accessibilityLabel={`Modifier ${movie.title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
       {movie.posterUrl ? (
-        <Image source={{ uri: movie.posterUrl }} style={styles.poster} />
+        <Image source={{ uri: movie.posterUrl }} style={styles.cover} accessibilityIgnoresInvertColors />
       ) : (
-        <View style={styles.posterPlaceholder}>
-          <Text style={{ fontSize: 24 }}>🎬</Text>
+        <View style={[styles.cover, styles.coverEmpty, { backgroundColor: color + "33" }]}>
+          <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
         </View>
       )}
 
-      <View style={{ flex: 1 }}>
-        {/* Titre */}
-        <Text style={styles.title}>
-          {movie.title} {movie.year ? `(${movie.year})` : ""}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {movie.title}
         </Text>
-
-        {/* Date de début : toujours affichée si définie */}
-        {movie.startedAt && (
-          <Text style={styles.meta}>
-            Commencé le {new Date(movie.startedAt).toLocaleDateString()}
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+        <View style={styles.progressRow}>
+          <Text style={[styles.progress, { color }]} numberOfLines={1}>
+            {progressText}
           </Text>
-        )}
-
-        {/* Note : toujours affichée si définie */}
-        {movie.review ? (
-          <Text style={styles.review}>
-            Note : {movie.review}
-          </Text>
-        ) : null}
-
-        {/* Barre de progression */}
-        {movie.runtime ? (
-          <>
-            <View style={styles.progressContainer}>
-              <View style={[styles.progressBar, { width: `${percent}%` }]} />
-            </View>
-            <View style={styles.progressMetaRow}>
-              <Text style={styles.pages}>
-                {movie.progressMinutes ?? 0}/{movie.runtime} min
-              </Text>
-              <Text style={styles.percent}>{percent}%</Text>
-            </View>
-          </>
-        ) : null}
-
-        {/* Input progression */}
-        <TextInput
-          placeholder="Avancement (min)"
-          keyboardType="numeric"
-          value={progressInput}
-          onChangeText={setProgressInput}
-          onBlur={() => onUpdateProgress(movie.id, Number(progressInput) || 0)}
-          style={styles.input}
-        />
-
-        {/* Boutons */}
-        <View style={styles.row}>
-          <Pressable
-            style={[styles.btn, { backgroundColor: "#16A34A" }]}
-            onPress={() => onMarkDone(movie.id)}
-          >
-            <Text style={styles.btnText}>Terminer</Text>
-          </Pressable>
-
-          {onEdit && (
-            <Pressable
-              style={[styles.btn, { backgroundColor: "#12AAB8" }]}
-              onPress={() => onEdit(movie)}
-            >
-              <Text style={styles.btnText}>Éditer</Text>
-            </Pressable>
-          )}
-
-          <Pressable
-            style={[styles.btn, { backgroundColor: "#EF4444" }]}
-            onPress={() => onRemove(movie.id)}
-          >
-            <Text style={styles.btnText}>🗑️</Text>
-          </Pressable>
+          {pct !== null && !done && <Text style={styles.pct}>{pct} %</Text>}
         </View>
+        {pct !== null && (
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+          </View>
+        )}
+        {movie.review ? (
+          <Text style={styles.review} numberOfLines={1}>
+            {movie.review}
+          </Text>
+        ) : null}
       </View>
-    </View>
+
+      {done ? (
+        <View style={styles.doneBadge} accessibilityLabel="Terminé">
+          <Ionicons name="checkmark" size={20} color={t.textMuted} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => onUpdateProgress(movie)}
+          accessibilityRole="button"
+          accessibilityLabel={`Mettre à jour la progression de ${movie.title}`}
+          hitSlop={8}
+          style={styles.updateBtn}
+        >
+          <Ionicons name="create-outline" size={20} color={t.onAccent} />
+        </Pressable>
+      )}
+    </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  poster: { width: 70, height: 100, borderRadius: 8, marginRight: 12 },
-  posterPlaceholder: {
-    width: 70,
-    height: 100,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: "#E5E7EB",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
-    color: "#111827",
-    marginBottom: 2,
-  },
-  meta: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 2,
-    fontFamily: "Poppins_400Regular",
-  },
-  review: {
-    fontSize: 13,
-    color: "#374151",
-    marginBottom: 6,
-    fontFamily: "Poppins_400Regular",
-  },
-  progressContainer: {
-    height: 6,
-    backgroundColor: "#E5E7EB",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressBar: { height: "100%", backgroundColor: "#12AAB8" },
-  progressMetaRow: {
-    marginTop: 4,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  pages: { fontSize: 13, color: "#374151" },
-  percent: { fontSize: 13, fontFamily: "Poppins_600SemiBold", color: "#0E5A90" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  row: { flexDirection: "row", gap: 8 },
-  btn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center" },
-  btnText: { color: "#FFFFFF", fontFamily: "Poppins_600SemiBold" },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cover: { width: 56, height: 80, borderRadius: 12 },
+    coverEmpty: { alignItems: "center", justifyContent: "center" },
+    coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
+    body: { flex: 1, minWidth: 0 },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    meta: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 2 },
+    progressRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8, gap: 8 },
+    progress: { flex: 1, fontFamily: t.fonts.semibold, fontSize: t.fs(13) },
+    pct: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted },
+    track: { height: 5, borderRadius: 3, backgroundColor: t.track, marginTop: 6, overflow: "hidden" },
+    fill: { height: 5, borderRadius: 3 },
+    review: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 6, fontStyle: "italic" },
+    updateBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" },
+    doneBadge: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.cardAlt, alignItems: "center", justifyContent: "center" },
+  });
+}

@@ -1,146 +1,224 @@
-# Arborescence du projet Listana (Version 1.2)
+# Arborescence du projet Listana
+
+Version 2 (Expo SDK 54, React 19.1, React Native 0.81, Expo Router 6).
+
+Les dossiers `.expo/`, `dist/`, `node_modules/` et `expo-env.d.ts` sont générés.
 
 ```
+
 .
-|-- .expo/
+
 |-- .github/
+
 |   |-- workflows/
-|       |-- deploy-web.yml          # CI/CD automatique vers GitHub Pages
+
+|       |-- deploy-web.yml              # Build web puis déploiement GitHub Pages
+
 |-- .vscode/
-|-- app/
-|   |-- +not-found.tsx              # Page 404
-|   |-- _layout.tsx                 # Layout principal avec fonts Poppins
-|   |-- anime.tsx                   # Page Animes
-|   |-- books.tsx                   # Page Livres (filtres, cartes, modales)
-|   |-- games.tsx                   # Page Jeux vidéo
-|   |-- index.tsx                   # Page d'accueil avec MediaGrid
-|   |-- manga.tsx                   # Page Mangas
-|   |-- movies.tsx                  # Page Films (filtres, cartes, modales)
-|   |-- note.tsx                    # Page Bloc-notes
-|   |-- podcast.tsx                 # Page Podcasts
-|   |-- privacy.tsx                 # Page Politique de confidentialité
-|   |-- tv.tsx                      # Page Séries TV
-|-- app-example/                    # Exemple Expo (référence)
+
+|-- app/                                # Routes Expo Router
+
+|   |-- +not-found.tsx                  # 404 : redirection vers l'accueil
+
+|   |-- _layout.tsx                     # Stack racine, Poppins, ThemeProvider
+
+|   |-- index.tsx                       # Accueil : Reprendre, catégories, paramètres
+
+|   |-- settings.tsx                    # Paramètres : thème et taille du texte
+
+|   |-- anime.tsx                       # Pont vers AnimesScreen
+
+|   |-- books.tsx                       # Écran Livres complet
+
+|   |-- games.tsx                       # Pont vers GamesScreen
+
+|   |-- manga.tsx                       # Pont vers MangasScreen
+
+|   |-- movies.tsx                      # Écran Films complet
+
+|   |-- note.tsx                        # Pont vers NotesScreen
+
+|   |-- podcast.tsx                     # Pont vers PodcastsScreen
+
+|   |-- privacy.tsx                     # Politique de confidentialité
+
+|   |-- tv.tsx                          # Pont vers TVShowsScreen
+
 |-- assets/
-|   |-- images/
-|       |-- android-icon-background.png
-|       |-- android-icon-foreground.png
-|       |-- android-icon-monochrome.png
-|       |-- favicon.png
-|       |-- icon.png
-|       |-- Listana_Favicon_V1.png
-|       |-- partial-react-logo.png
-|       |-- react-logo.png
-|       |-- react-logo@2x.png
-|       |-- react-logo@3x.png
-|       |-- splash-icon.png
-|-- dist/                           # Build web (généré par expo export)
+
+|   |-- images/                         # Icônes, favicon, splash
+
 |-- docs/
-|   |-- ARBORESCENCE.md            # Ce fichier
-|   |-- privacy.md                 # Politique de confidentialité (documentation)
+
+|   |-- [ARBORESCENCE.md](http://ARBORESCENCE.md)                 # Ce fichier
+
+|   |-- [privacy.md](http://privacy.md)                      # Texte de la politique de confidentialité
+
 |-- scripts/
-|   |-- fix-public-paths.cjs       # Script post-build pour GitHub Pages (History API)
+
+|   |-- fix-public-paths.cjs            # Préfixe /Listana et routing hash (GitHub Pages)
+
 |-- src/
+
+|   |-- theme.ts                        # Palettes clair/sombre, polices, tailles, en-têtes
+
+|   |-- ThemeContext.tsx                # ThemeProvider, useTheme, useSettings
+
 |   |-- components/
-|   |   |-- AddAnimeModal.tsx       # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- AddBookModal.tsx        # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- AddMovieModal.tsx       # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- AddTVShowModal.tsx      # ✨ v1.2: KeyboardAvoidingView + ScrollView
+
+|   |   |-- MediaCard.tsx               # Tuile de catégorie (icône + couleur)
+
+|   |   |-- MediaGrid.tsx               # Grille des catégories
+
+|   |   |-- ResumeSection.tsx           # Section « Reprendre » de l'accueil
+
+|   |   |-- WebBackButton.tsx           # En-tête retour sur le web
+
+|   |   |-- ProgressUpdateModal.tsx     # Mise à jour de progression générique (films)
+
 |   |   |-- AnimeCard.tsx
-|   |   |-- BookCard.tsx
-|   |   |-- EditAnimeModal.tsx      # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditGameModal.tsx       # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditMangaModal.tsx      # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditMovieModal.tsx      # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditNoteModal.tsx       # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditPodcastModal.tsx    # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- EditTVShowModal.tsx     # ✨ v1.2: KeyboardAvoidingView + ScrollView
-|   |   |-- GameCard.tsx
-|   |   |-- MangaCard.tsx           # ✨ v1.2: Nouveau design (Dernier lu, suppression barre progression)
-|   |   |-- MediaCard.tsx           # ✨ v1.2: Fix texte multi-lignes (aspectRatio 1, numberOfLines 2)
-|   |   |-- MediaGrid.tsx
-|   |   |-- MovieCard.tsx
-|   |   |-- NoteCard.tsx
-|   |   |-- PodcastCard.tsx
+
+|   |   |-- AnimeFormModal.tsx          # Ajout et modification d'un animé
+
 |   |   |-- TVShowCard.tsx
-|   |   |-- WebBackButton.tsx       # Bouton retour dédié pour navigateur web
+
+|   |   |-- TVShowFormModal.tsx         # Ajout et modification d'une série
+
+|   |   |-- MovieCard.tsx
+
+|   |   |-- MovieFormModal.tsx          # Ajout et modification d'un film (note /5)
+
+|   |   |-- BookCard.tsx
+
+|   |   |-- AddBookModal.tsx            # Ajout et modification d'un livre
+
+|   |   |-- UpdateBookPageModal.tsx     # Mise à jour de la page atteinte
+
+|   |   |-- MangaCard.tsx
+
+|   |   |-- EditMangaModal.tsx          # Ajout et modification d'un manga
+
+|   |   |-- UpdateMangaProgressModal.tsx # Mise à jour tome / chapitre
+
+|   |   |-- GameCard.tsx
+
+|   |   |-- GameFormModal.tsx           # Ajout et modification d'un jeu
+
+|   |   |-- PodcastCard.tsx
+
+|   |   |-- PodcastFormModal.tsx        # Ajout et modification (podcast ou livre audio)
+
+|   |   |-- NoteCard.tsx
+
+|   |   |-- NoteEditorModal.tsx         # Éditeur de note plein écran
+
 |   |-- constants/
-|   |   |-- media.ts                # Configuration des types de médias
+
+|   |   |-- media.ts                    # Clés et libellés des catégories
+
 |   |-- hooks/
+
+|   |   |-- useStorage.ts               # MMKV si disponible, sinon AsyncStorage
+
+|   |   |-- useResumeItems.ts           # Agrège les éléments en cours pour l'accueil
+
 |   |   |-- useAnimes.ts
-|   |   |-- useBooks.ts
+
+|   |   |-- useBooks.ts                 # Statut dérivé de la page atteinte
+
 |   |   |-- useMovies.ts
-|   |   |-- useStorage.ts           # Hook générique pour AsyncStorage
+
 |   |   |-- useTVShows.ts
+
 |   |-- screens/
+
 |   |   |-- AnimesScreen.tsx
-|   |   |-- GamesScreen.tsx         # ✨ v1.2: Fix traduction "plateforme"
-|   |   |-- MangasScreen.tsx        # ✨ v1.2: Ajout bouton supprimer
-|   |   |-- NotesScreen.tsx         # ✨ v1.2: Ajout tri par date/modification
+
+|   |   |-- GamesScreen.tsx
+
+|   |   |-- MangasScreen.tsx
+
+|   |   |-- NotesScreen.tsx
+
 |   |   |-- PodcastsScreen.tsx
+
 |   |   |-- TVShowsScreen.tsx
+
 |   |-- storage/
-|   |   |-- game.store.ts           # MMKV storage pour jeux
-|   |   |-- manga.store.ts          # MMKV storage pour mangas
-|   |   |-- note.store.ts           # MMKV storage pour notes
-|   |   |-- podcast.store.ts        # MMKV storage pour podcasts
+
+|   |   |-- [game.store](http://game.store).ts               # Liste persistée (chargement via initGames)
+
+|   |   |-- [manga.store](http://manga.store).ts              # Liste persistée (chargement via initMangas)
+
+|   |   |-- [note.store](http://note.store).ts               # Liste persistée (chargement via initNotes)
+
+|   |   |-- [podcast.store](http://podcast.store).ts            # Liste persistée (chargement via initPodcasts)
+
 |   |-- types/
-|       |-- anime.ts                # Interface Anime
-|       |-- book.ts                 # Interface Book
-|       |-- game.ts                 # Interface Game
-|       |-- manga.ts                # Interface Manga (lastChapter, chapterNumber, volumeNumber)
-|       |-- movie.ts                # Interface Movie
-|       |-- note.ts                 # Interface Note
-|       |-- podcast.ts              # Interface Podcast
-|       |-- tvshow.ts               # Interface TVShow
-|-- app.json                        # Config Expo (bundle ID: com.listana.app)
-|-- eas.json                        # ✨ v1.2: Configuration EAS Build (Android)
+
+|   |   |-- anime.ts | book.ts | game.ts | manga.ts | movie.ts | note.ts | podcast.ts | tvshow.ts
+
+|   |-- utils/
+
+|       |-- mangaProgress.ts            # Libellés et calculs de progression manga
+
+|-- app.json                            # Expo : [com.listana.app](http://com.listana.app), hash history, EAS
+
+|-- eas.json                            # Profils development, preview, production
+
 |-- eslint.config.js
-|-- expo-env.d.ts
-|-- package-lock.json
-|-- package.json                    # Dépendances (Expo SDK 52, React 19, React Native 0.81)
-|-- README.md                       # ✨ v1.2: Documenté toutes les améliorations
+
+|-- package.json
+
+|-- [README.md](http://README.md)
+
 |-- tsconfig.json
+
 ```
 
-## Points notables
+## Architecture
 
-### Architecture
-- **Expo Router v6** : Navigation basée sur les fichiers dans `app/`
-- **Storage local** : MMKV pour persistance sans permissions réseau
-- **Design responsive** : `useWindowDimensions` pour mobile/tablette/desktop
-- **Multi-plateforme** : Web (GitHub Pages) + Android/iOS (EAS Build)
+- **Navigation** : Expo Router, fichiers dans `app/`. L'accueil appelle `router.push` avec la clé définie dans `src/constants/media.ts`.
 
-### Version 1.2 - Améliorations UX/UI
-- ✅ **Tous les modaux** (9 fichiers) : `KeyboardAvoidingView` + `ScrollView` → clavier ne cache plus les champs
-- ✅ **MangaCard** : Nouveau design "Dernier lu" sans barre de progression
-- ✅ **MediaCard** : Fix texte multi-lignes (aspectRatio 1, numberOfLines 2, fontSize 12)
-- ✅ **MangasScreen** : Bouton supprimer ajouté
-- ✅ **NotesScreen** : Tri par date de création ou modification
-- ✅ **GamesScreen** : Traduction "Trier par plateforme"
-- ✅ **Emojis** : Fix encodage UTF-8 (🗑️ icône corbeille)
+- **Deux formes d'écran** : `movies.tsx` et `books.tsx` contiennent l'écran complet. Les autres routes sont des ponts vers `src/screens`, avec l'en-tête natif sur mobile et `WebBackButton` sur le web.
 
-### Déploiement
-- **Web** : GitHub Actions → `deploy-web.yml` → GitHub Pages
-- **Script post-build** : `fix-public-paths.cjs` intercepte History API pour routing
-- **Android** : EAS Build avec profil `preview` (APK) et `production` (AAB)
-- **Bundle ID** : `com.listana.app`
+- **Thème** : chaque composant lit le thème via `useTheme()` et construit ses styles avec `makeStyles(t)`. Les en-têtes natifs utilisent `makeHeaderOptions(t)`.
 
-### Navigation
-- `app/index.tsx` : Accueil avec `MediaGrid`, navigation via `router.push`
-- `app/anime.tsx`, `app/tv.tsx`, `app/manga.tsx`, `app/games.tsx`, `app/podcast.tsx`, `app/note.tsx` : Ponts vers `src/screens`
-- `app/movies.tsx` et `app/books.tsx` : Écrans complets avec filtres intégrés
-- `app/privacy.tsx` : Politique de confidentialité accessible depuis l'accueil
+- **Taille du texte** : `t.fs(n)` applique le réglage choisi dans les paramètres.
 
-### Thème
-- **Header** : Titre noir (`#111827`) + flèche retour bleue (`#12AAB8`)
-- **Fonts** : Poppins (300, 400, 500, 600, 700) via `@expo-google-fonts`
-- **Cards** : Blanc avec bordure grise, hover effect sur web
-- **Modales** : ScrollView + KeyboardAvoidingView pour meilleure accessibilité mobile
-```
+- **Largeur** : seuil desktop à 768 px sur l'accueil et la grille.
 
-## Navigation (rappel)
-- `app/index.tsx` : accueil et grille `MediaGrid`, navigation via `router.push`.
-- `app/anime.tsx`, `app/tv.tsx`, `app/manga.tsx`, `app/games.tsx`, `app/podcast.tsx`, `app/note.tsx` : ponts vers les écrans dédiés de `src/screens`.
-- `app/movies.tsx` et `app/books.tsx` : écrans complets avec filtres, cartes et modales intégrées.
-- `app/privacy.tsx` : écran Politique de confidentialité accessible depuis la page d’accueil.
+## Persistance
+
+`src/hooks/useStorage.ts` ouvre MMKV quand le module natif est disponible et retombe sur AsyncStorage sinon.
+
+| Média | Où | Clé | Survit au redémarrage |
+
+|---|---|---|---|
+
+| Animés | useAnimes | `listana.animes.v1` | Oui |
+
+| Livres | useBooks | `listana.books.v1` | Oui |
+
+| Films | useMovies | `movies` (AsyncStorage) | Oui |
+
+| Séries TV | useTVShows | `tvshows` (AsyncStorage) | Oui |
+
+| Bloc-notes | [note.store](http://note.store) | `listana.note.v1` | Oui |
+
+| Mangas | [manga.store](http://manga.store) | `listana.manga.v1` | Oui |
+
+| Jeux vidéo | [game.store](http://game.store) | `listana.game.v1` | Oui |
+
+| Podcasts | [podcast.store](http://podcast.store) | `listana.podcast.v1` | Oui |
+
+| Paramètres | ThemeContext | `listana.settings.v1` | Oui |
+
+Les stores (mangas, jeux, podcasts, notes) attendent toujours la fin du chargement avant d'écrire, pour ne jamais écraser une liste enregistrée.
+
+## Déploiement
+
+- **Web** : push sur `main` ou `master`, ou lancement manuel, via `.github/workflows/deploy-web.yml`. URL : [https://qassim-coding.github.io/Listana](https://qassim-coding.github.io/Listana)
+
+- **Android / iOS** : EAS Build, identifiant `com.listana.app`.
+

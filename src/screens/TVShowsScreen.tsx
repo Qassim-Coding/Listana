@@ -1,161 +1,214 @@
-import React, { useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AddTVShowModal from "../components/AddTVShowModal";
-import EditTVShowModal from "../components/EditTVShowModal";
 import TVShowCard from "../components/TVShowCard";
-import { useTVShows } from "../hooks/useTVShows";
+import TVShowFormModal from "../components/TVShowFormModal";
+import { NewTVShow, TV_STATUS_LABEL, useTVShows } from "../hooks/useTVShows";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { TVShow } from "../types/tvshow";
 
+type Filter = "all" | TVShow["status"];
+const FILTERS: Filter[] = ["all", "watching", "planning", "done", "dropped"];
+const SORT_LABEL = { date: "Plus récents ↓", title: "Titre A → Z", status: "Par statut" } as const;
+const NEXT_SORT = { date: "title", title: "status", status: "date" } as const;
+
 export default function TVShowsScreen() {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
   const {
+    shows,
     visibleShows,
     loading,
     addShow,
     updateShow,
     removeShow,
-    markDone,
     incrementEpisode,
-    startEpisode,
     filter,
     setFilter,
     sort,
     setSort,
   } = useTVShows();
 
-  const [addVisible, setAddVisible] = useState(false);
-  const [editVisible, setEditVisible] = useState(false);
+  const [query, setQuery] = useState("");
+  const [formVisible, setFormVisible] = useState(false);
   const [selected, setSelected] = useState<TVShow | null>(null);
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#12AAB8" />
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" color={t.accent} />
       </View>
     );
   }
 
+  const count = (f: Filter) => (f === "all" ? shows.length : shows.filter((s) => s.status === f).length);
+  const q = query.trim().toLowerCase();
+  const shown = q ? visibleShows.filter((s) => s.title.toLowerCase().includes(q)) : visibleShows;
+
+  function openAdd() {
+    setSelected(null);
+    setFormVisible(true);
+  }
+
+  function openEdit(show: TVShow) {
+    setSelected(show);
+    setFormVisible(true);
+  }
+
+  function handleSubmit(data: NewTVShow) {
+    if (selected) updateShow(selected.id, data);
+    else addShow(data);
+  }
+
   return (
     <View style={styles.container}>
-      {/* Filtres */}
-      <View style={styles.filters}>
-        {["all", "planning", "watching", "done", "dropped"].map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f as any)}
-            style={[styles.filterBtn, filter === f && styles.filterBtnActive]}
-          >
-            <Text style={[styles.filterText, filter === f && styles.filterTextActive]}>
-              {f === "all"
-                ? "Tous"
-                : f === "planning"
-                ? "À voir"
-                : f === "watching"
-                ? "En cours"
-                : f === "done"
-                ? "Terminés"
-                : "Abandonnés"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Tri */}
-      <View style={styles.filters}>
-        {["date", "title", "status"].map((s) => (
-          <Pressable
-            key={s}
-            onPress={() => setSort(s as any)}
-            style={[styles.filterBtn, sort === s && styles.filterBtnActive]}
-          >
-            <Text style={[styles.filterText, sort === s && styles.filterTextActive]}>
-              {s === "date" ? "Date" : s === "title" ? "Titre" : "Statut"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Liste */}
-      {visibleShows.length === 0 ? (
-        <View style={styles.center}>
-          <Text style={styles.empty}>Ajoute ta première série 😊</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={visibleShows}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 12 }}
-          renderItem={({ item }) => (
-            <TVShowCard
-              show={item}
-              onEdit={(s) => {
-                setSelected(s);
-                setEditVisible(true);
-              }}
-              onRemove={removeShow}
-              onMarkDone={markDone}
-              onIncrementEpisode={incrementEpisode}
-              onStartEpisode={startEpisode}
-            />
-          )}
+      <View style={styles.search}>
+        <Ionicons name="search-outline" size={18} color={t.textMuted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher une série"
+          placeholderTextColor={t.textMuted}
+          accessibilityLabel="Rechercher une série"
+          style={styles.searchInput}
         />
-      )}
+      </View>
 
-      {/* Bouton ajouter (style jeux-vidéos) */}
-      <Pressable
-        style={[styles.addBtn, { marginBottom: 24 + insets.bottom }]}
-        onPress={() => setAddVisible(true)}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={styles.chips}
       >
-        <Text style={styles.addText}>＋ Ajouter une série</Text>
+        {FILTERS.map((f) => {
+          const on = filter === f;
+          return (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                {f === "all" ? "Toutes" : TV_STATUS_LABEL[f]} · {count(f)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.listHeader}>
+        <Text style={styles.listCount}>
+          {shown.length} série{shown.length > 1 ? "s" : ""}
+        </Text>
+        <Pressable onPress={() => setSort(NEXT_SORT[sort])} accessibilityRole="button" hitSlop={12}>
+          <Text style={styles.sortText}>{SORT_LABEL[sort]}</Text>
+        </Pressable>
+      </View>
+
+      <FlatList
+        style={styles.list}
+        data={shown}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        ListEmptyComponent={<Text style={styles.empty}>Aucune série ici pour l'instant.</Text>}
+        renderItem={({ item }) => (
+          <TVShowCard show={item} onEdit={openEdit} onIncrementEpisode={incrementEpisode} />
+        )}
+      />
+
+      <Pressable
+        onPress={openAdd}
+        accessibilityRole="button"
+        style={[styles.addBtn, { bottom: 16 + insets.bottom }]}
+      >
+        <Ionicons name="add" size={22} color={t.onAccent} />
+        <Text style={styles.addText}>Ajouter une série</Text>
       </Pressable>
 
-      {/* Modales */}
-      <AddTVShowModal
-        visible={addVisible}
-        onClose={() => setAddVisible(false)}
-        onSubmit={async (data) => {
-          await addShow(data);
-          setAddVisible(false);
-        }}
-      />
-      <EditTVShowModal
-        visible={editVisible}
+      <TVShowFormModal
+        visible={formVisible}
         initial={selected}
-        onClose={() => setEditVisible(false)}
-        onSubmit={async (changes) => {
-          if (selected) {
-            await updateShow(selected.id, changes);
-          }
-          setEditVisible(false);
-        }}
+        onClose={() => setFormVisible(false)}
+        onSubmit={handleSubmit}
+        onDelete={(s) => removeShow(s.id)}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  empty: { fontSize: 16, color: "#6B7280", fontFamily: "Poppins_400Regular" },
-  filters: { flexDirection: "row", flexWrap: "wrap", gap: 8, padding: 8 },
-  filterBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-  },
-  filterBtnActive: { backgroundColor: "#12AAB8" },
-  filterText: { fontFamily: "Poppins_400Regular", fontSize: 13, color: "#111827" },
-  filterTextActive: { color: "#fff", fontFamily: "Poppins_600SemiBold" },
-  addBtn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 12,
-    marginTop: 12,
-  },
-  addText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-});
-
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg, paddingHorizontal: 16, paddingTop: 12 },
+    center: { justifyContent: "center", alignItems: "center" },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      height: 48,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    searchInput: { flex: 1, fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.text },
+    chipsScroll: { flexGrow: 0, marginTop: 14 },
+    chips: { gap: 8, paddingRight: 16 },
+    chip: {
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      justifyContent: "center",
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    chipOn: { backgroundColor: t.text, borderColor: t.text },
+    chipText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.textMuted },
+    chipTextOn: { color: t.bg },
+    listHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 14,
+      marginBottom: 8,
+    },
+    listCount: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
+    list: { flex: 1 },
+    empty: {
+      textAlign: "center",
+      marginTop: 40,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(14),
+      color: t.textMuted,
+    },
+    addBtn: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+  });
+}

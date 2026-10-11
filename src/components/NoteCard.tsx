@@ -1,78 +1,57 @@
-import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useMemo } from "react";
+import { Pressable, StyleSheet, Text } from "react-native";
+import { useTheme } from "../ThemeContext";
+import { Theme } from "../theme";
 import { Note } from "../types/note";
 
 type Props = {
   item: Note;
-  selected?: boolean;
-  onSelect: (note: Note) => void; // used for editing when tapping the card
-  onDuplicate?: (note: Note) => void;
-  onEdit?: (note: Note) => void;
-  onRemove?: (note: Note) => void;
+  onOpen: (note: Note) => void;
 };
 
-export default function NoteCard({ item, selected, onSelect, onDuplicate, onEdit, onRemove }: Props) {
+export default function NoteCard({ item, onOpen }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const title = item.title || "Sans titre";
+
   return (
-    <Pressable onPress={() => onSelect(item)} style={[styles.card, selected && styles.cardSelected]}>
-      {/* Titre + date */}
-      <View style={styles.row}>
-        <Text style={styles.title}>{item.title || "Sans titre"}</Text>
-        <Text style={styles.date}>Dernière modification le {new Date(item.updatedAt).toLocaleDateString()}</Text>
-      </View>
-
-      {/* Aperçu du contenu */}
-      <Text style={styles.preview} numberOfLines={3}>
-        {item.content || "(vide)"}
+    <Pressable
+      onPress={() => onOpen(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Ouvrir la note ${title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
+      <Text style={styles.title} numberOfLines={1}>
+        {title}
       </Text>
-
-      {/* Actions */}
-      <View style={styles.actionsRow}>
-        {(onEdit || onSelect) && (
-          <Pressable
-            style={[styles.actionBtn, { backgroundColor: "#12AAB8" }]}
-            onPress={() => (onEdit ? onEdit(item) : onSelect(item))}
-          >
-            <Text style={[styles.actionText, { color: "#fff" }]}>{"\u00C9"}diter</Text>
-          </Pressable>
-        )}
-        {onDuplicate && (
-          <Pressable style={[styles.actionBtn, styles.ghost]} onPress={() => onDuplicate(item)}>
-            <Text style={styles.actionText}>📄 Dupliquer</Text>
-          </Pressable>
-        )}
-        {onRemove && (
-          <Pressable style={[styles.actionBtn, { backgroundColor: "#EF4444" }]} onPress={() => onRemove(item)}>
-            <Text style={[styles.actionText, { color: "#fff" }]}>🗑️</Text>
-          </Pressable>
-        )}
-      </View>
+      <Text style={styles.preview} numberOfLines={3}>
+        {item.content?.trim() || "Note vide"}
+      </Text>
+      <Text style={styles.date}>
+        Modifiée le {new Date(item.updatedAt).toLocaleDateString("fr-FR")}
+      </Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  cardSelected: {
-    backgroundColor: "#E0F2FE",
-    borderColor: "#0EA5E9",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 6,
-  },
-  title: { fontSize: 15, fontWeight: "600", flex: 1 },
-  date: { fontSize: 11, color: "#6B7280", marginLeft: 8 },
-  preview: { fontSize: 13, color: "#374151", marginBottom: 6 },
-  actionsRow: { flexDirection: "row", gap: 8, marginTop: 8, flexWrap: "wrap" },
-  actionBtn: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: 8, alignItems: "center" },
-  ghost: { backgroundColor: "#F3F4F6" },
-  actionText: { fontSize: 12, color: "#111827", fontWeight: "600" },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      padding: 16,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    preview: {
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(14),
+      lineHeight: t.fs(20),
+      color: t.textMuted,
+      marginTop: 6,
+    },
+    date: { fontFamily: t.fonts.regular, fontSize: t.fs(11), color: t.textMuted, marginTop: 10 },
+  });
+}

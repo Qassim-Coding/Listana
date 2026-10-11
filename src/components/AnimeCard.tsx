@@ -1,161 +1,113 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { ANIME_STATUS_LABEL } from "../hooks/useAnimes";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Anime } from "../types/anime";
 
-export default function AnimeCard({
-  anime,
-  onEdit,
-  onRemove,
-  onMarkDone,
-  onIncrementEpisode,
-  onStartEpisode,
-}: {
+type Props = {
   anime: Anime;
   onEdit: (anime: Anime) => void;
-  onRemove: (id: string) => void;
-  onMarkDone: (id: string) => void;
   onIncrementEpisode: (id: string) => void;
-  onStartEpisode: (id: string) => void;
-}) {
-  const progress =
-    anime.totalEpisodes && anime.totalEpisodes > 0
-      ? Math.min(anime.currentEpisode / anime.totalEpisodes, 1)
-      : 0;
+};
 
-  const statusLabel = anime.endedAt
-    ? `Termin\u00E9 le ${new Date(anime.endedAt).toLocaleDateString('fr-FR')}`
-    : anime.startedAt
-    ? `Commenc\u00E9 le ${new Date(anime.startedAt).toLocaleDateString('fr-FR')}`
-    : anime.status === 'planning'
-    ? 'Pr\u00E9vu'
-    : anime.status === 'watching'
-    ? 'En cours'
-    : anime.status === 'dropped'
-    ? 'Abandonn\u00E9'
-    : 'Termin\u00E9';
+export default function AnimeCard({ anime, onEdit, onIncrementEpisode }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const color = t.media.anime;
+  const total = anime.totalEpisodes;
+  const atMax = !!total && anime.currentEpisode >= total;
+  const finished = anime.status === "done" || atMax;
+  const pct = total ? Math.min(100, Math.round((anime.currentEpisode / total) * 100)) : null;
+  const initial = anime.title.trim().charAt(0).toUpperCase();
+  const meta = `${anime.kind === "film" ? "Film / OAV" : "Animé"}${anime.year ? ` · ${anime.year}` : ""}`;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{anime.title}</Text>
-        <Text style={styles.status}>{statusLabel}</Text>
+    <Pressable
+      onPress={() => onEdit(anime)}
+      accessibilityRole="button"
+      accessibilityLabel={`Modifier ${anime.title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
+      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
+        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
       </View>
 
-      <Text style={styles.meta}>
-        {anime.kind === "film" ? "Film / OAV" : "Animé"}{" "}
-        {anime.year ? `• ${anime.year}` : ""}
-      </Text>
-
-      {anime.review ? <Text style={styles.review}>{anime.review}</Text> : null}
-      <Text style={styles.progressText}>
-        Épisode {anime.currentEpisode}
-        {anime.totalEpisodes ? ` / ${anime.totalEpisodes}` : ""}
-      </Text>
-
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { flex: progress }]} />
-        <View style={{ flex: 1 - progress }} />
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {anime.title}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta} · {ANIME_STATUS_LABEL[anime.status] ?? ""}
+        </Text>
+        <Text style={[styles.progress, { color }]}>
+          Épisode {anime.currentEpisode}
+          {total ? ` / ${total}` : ""}
+        </Text>
+        {pct !== null && (
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
+          </View>
+        )}
       </View>
 
-      <View style={styles.row}>
+      {finished ? (
+        <View style={styles.doneBadge} accessibilityLabel="Terminé">
+          <Ionicons name="checkmark" size={20} color={t.textMuted} />
+        </View>
+      ) : (
         <Pressable
-          style={[
-            styles.btn,
-            anime.totalEpisodes && anime.currentEpisode >= anime.totalEpisodes ? { opacity: 0.5 } : null,
-          ]}
-          disabled={!!(anime.totalEpisodes && anime.currentEpisode >= anime.totalEpisodes)}
           onPress={() => onIncrementEpisode(anime.id)}
+          accessibilityRole="button"
+          accessibilityLabel={`Ajouter un épisode à ${anime.title}`}
+          hitSlop={8}
+          style={styles.plusBtn}
         >
-          <Text style={styles.btnText}>+1 épisode</Text>
+          <Text style={styles.plusText}>+1</Text>
         </Pressable>
-        <Pressable style={styles.btn} onPress={() => onStartEpisode(anime.id)}>
-          <Text style={styles.btnText}>Commencer</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, { backgroundColor: "#16A34A" }]} onPress={() => onMarkDone(anime.id)}>
-          <Text style={styles.btnText}>Terminé</Text>
-        </Pressable>
-        <Pressable style={styles.btn} onPress={() => onEdit(anime)}>
-          <Text style={styles.btnText}>{"\u00C9"}diter</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, { backgroundColor: "#EF4444" }]} onPress={() => onRemove(anime.id)}>
-          <Text style={styles.btnText}>🗑️</Text>
-        </Pressable>
-      </View>
-    </View>
+      )}
+    </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-    gap: 6,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
-    color: "#111827",
-  },
-  status: {
-    fontSize: 12,
-    fontFamily: "Poppins_400Regular",
-    color: "#6B7280",
-  },
-  meta: {
-    fontSize: 13,
-    fontFamily: "Poppins_400Regular",
-    color: "#374151",
-  },
-  review: {
-    fontSize: 13,
-    color: "#374151",
-    marginBottom: 8,
-    fontFamily: "Poppins_400Regular",
-  },
-  progressText: {
-    fontSize: 13,
-    fontFamily: "Poppins_400Regular",
-    color: "#0E5A90",
-  },
-  progressBar: {
-    flexDirection: "row",
-    height: 6,
-    borderRadius: 3,
-    overflow: "hidden",
-    backgroundColor: "#E5E7EB",
-  },
-  progressFill: {
-    backgroundColor: "#12AAB8",
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  btn: {
-    backgroundColor: "#12AAB8",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  btnGhost: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  btnText: {
-    fontSize: 13,
-    fontFamily: "Poppins_500Medium",
-    color: "#fff",
-  },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
+    body: { flex: 1, minWidth: 0 },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    meta: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 2 },
+    progress: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), marginTop: 8 },
+    track: { height: 5, borderRadius: 3, backgroundColor: t.track, marginTop: 6, overflow: "hidden" },
+    fill: { height: 5, borderRadius: 3 },
+    plusBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    plusText: { fontFamily: t.fonts.bold, fontSize: t.fs(14), color: t.onAccent },
+    doneBadge: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.cardAlt,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+  });
+}

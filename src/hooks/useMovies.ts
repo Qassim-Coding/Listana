@@ -6,6 +6,15 @@ import { Movie } from "../types/movie";
 type FilterKey = "all" | "watching" | "done" | "planning" | "dropped";
 type SortKey = "date" | "title" | "status";
 
+const STORAGE_KEY = "movies";
+
+export const MOVIE_STATUS_LABEL: Record<string, string> = {
+  planning: "À voir",
+  watching: "En cours",
+  done: "Terminé",
+  dropped: "Abandonné",
+};
+
 export function useMovies() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -14,80 +23,87 @@ export function useMovies() {
 
   useEffect(() => {
     (async () => {
-      const raw = await AsyncStorage.getItem("movies");
-      if (raw) setMovies(JSON.parse(raw));
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) setMovies(JSON.parse(raw));
+      } catch {}
       setLoading(false);
     })();
   }, []);
 
-  const persist = async (data: Movie[]) => {
-    setMovies(data);
-    await AsyncStorage.setItem("movies", JSON.stringify(data));
-  };
+  // Sauvegarde après chaque changement (même format qu'avant)
+  useEffect(() => {
+    if (!loading) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(movies)).catch(() => {});
+  }, [movies, loading]);
 
-  const addMovie = async (movie: Partial<Movie>) => {
-    const newMovie: Movie = {
+  function addMovie(movie: Partial<Movie>) {
+    const progress = movie.progressMinutes ?? 0;
+    const newMovie = {
+      ...movie,
       id: nanoid(),
-      title: movie.title ?? "Film sans titre",
-      year: movie.year ?? undefined,
-      runtime: movie.runtime ?? undefined,
-      progressMinutes: 0,
-      status: "planning",
-      rating: undefined,
+      title: movie.title || "Film sans titre",
+      progressMinutes: progress,
+      status: movie.status ?? (progress > 0 ? "watching" : "planning"),
       review: movie.review ?? "",
-      source: "manual",
-      updatedAt: Date.now(),
-      // 👇 nouvelle propriété
+      source: movie.source ?? "manual",
       startedAt: movie.startedAt ?? new Date().toISOString(),
-    };
-    await persist([newMovie, ...movies]);
-  };
+      updatedAt: Date.now(),
+    } as Movie;
+    setMovies((prev) => [newMovie, ...prev]);
+  }
 
-  const updateProgress = async (id: string, minutes: number) => {
-    const updated = movies.map((m) =>
-      m.id === id
-        ? { ...m, progressMinutes: minutes, updatedAt: Date.now() }
-        : m
+  // Minutes vues : passe en "En cours" puis "Terminé" automatiquement
+  function updateProgress(id: string, rawMinutes: number) {
+    setMovies((prev) =>
+      prev.map((m): Movie => {
+        if (m.id !== id) return m;
+        const minutes = Math.max(0, m.runtime ? Math.min(rawMinutes, m.runtime) : rawMinutes);
+        const finished = !!m.runtime && minutes >= m.runtime;
+        return {
+          ...m,
+          progressMinutes: minutes,
+          status: finished ? "done" : m.status === "planning" && minutes > 0 ? "watching" : m.status,
+          finishedAt: finished ? m.finishedAt ?? Date.now() : m.finishedAt,
+          updatedAt: Date.now(),
+        } as Movie;
+      })
     );
-    await persist(updated);
-  };
+  }
 
-  const markDone = async (id: string) => {
-    const updated = movies.map((m) =>
-      m.id === id
-        ? {
-            ...m,
-            status: "done",
-            progressMinutes: m.runtime ?? m.progressMinutes ?? 0,
-            finishedAt: Date.now(),
-            updatedAt: Date.now(),
-          }
-        : m
+  function markDone(id: string) {
+    setMovies((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? ({
+              ...m,
+              status: "done",
+              progressMinutes: m.runtime ?? m.progressMinutes ?? 0,
+              finishedAt: Date.now(),
+              updatedAt: Date.now(),
+            } as Movie)
+          : m
+      )
     );
-    await persist(updated);
-  };
+  }
 
-  const updateMovie = async (id: string, changes: Partial<Movie>) => {
-    const updated = movies.map((m) =>
-      m.id === id ? { ...m, ...changes, updatedAt: Date.now() } : m
+  function updateMovie(id: string, changes: Partial<Movie>) {
+    setMovies((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, ...changes, updatedAt: Date.now() } : m))
     );
-    await persist(updated);
-  };
+  }
 
-  const removeMovie = async (id: string) => {
-    const updated = movies.filter((m) => m.id !== id);
-    await persist(updated);
-  };
+  function removeMovie(id: string) {
+    setMovies((prev) => prev.filter((m) => m.id !== id));
+  }
 
   const doneCount = movies.filter((m) => m.status === "done").length;
 
   const visibleMovies = movies
     .filter((m) => (filter === "all" ? true : m.status === filter))
     .sort((a, b) => {
-      if (sort === "title")
-        return a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
+      if (sort === "title") return a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
       if (sort === "status") return a.status.localeCompare(b.status);
-      return b.updatedAt - a.updatedAt; // sort=date
+      return b.updatedAt - a.updatedAt;
     });
 
   return {

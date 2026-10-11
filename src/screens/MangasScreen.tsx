@@ -1,27 +1,48 @@
-import React, { useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import EditMangaModal from "../components/EditMangaModal";
 import MangaCard from "../components/MangaCard";
+import UpdateMangaProgressModal from "../components/UpdateMangaProgressModal";
 import {
-    addManga,
-    deleteManga,
-    duplicateMangaFrom,
-    getMangas,
-    searchMangas,
-    sortMangas,
-    updateManga,
+  addManga,
+  deleteManga,
+  duplicateMangaFrom,
+  getMangas,
+  initMangas,
+  searchMangas,
+  sortMangas,
+  updateManga,
 } from "../storage/manga.store";
-import { Manga } from "../types/manga";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
+import { Manga, MangaStatus } from "../types/manga";
+import { MANGA_STATUS_LABEL } from "../utils/mangaProgress";
+
+type Filter = "all" | MangaStatus;
+const FILTERS: Filter[] = ["all", "reading", "toRead", "completed", "abandoned"];
 
 export default function MangasScreen() {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
   const [mangas, setMangas] = useState<Manga[]>(getMangas());
-  const [filter, setFilter] = useState<"all" | NonNullable<Manga["status"]>>("all");
+  const [filter, setFilter] = useState<Filter>("all");
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
   const [query, setQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [editingManga, setEditingManga] = useState<Manga | null>(null);
+  const [progressManga, setProgressManga] = useState<Manga | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      await initMangas();
+      setMangas([...getMangas()]);
+    })();
+  }, []);
+
+  const refresh = () => setMangas([...getMangas()]);
 
   function handleAdd() {
     setEditingManga(null);
@@ -43,6 +64,7 @@ export default function MangasScreen() {
         title: (changes.title || "Sans titre") as string,
         series: changes.series,
         status: (changes.status || "toRead") as Manga["status"],
+        progressMode: changes.progressMode,
         volumeNumber: changes.volumeNumber,
         chapterNumber: changes.chapterNumber,
         pagesTotal: changes.pagesTotal,
@@ -55,181 +77,194 @@ export default function MangasScreen() {
       };
       addManga(newManga);
     }
-    setMangas(getMangas());
+    refresh();
   }
 
   function handleDuplicate(manga: Manga) {
-    const copy = duplicateMangaFrom(manga);
-    addManga(copy);
-    setMangas(getMangas());
+    addManga(duplicateMangaFrom(manga));
+    refresh();
   }
 
-  const filteredBySearch = query ? searchMangas(mangas, query) : mangas;
-  const filteredByStatus =
-    filter === "all" ? filteredBySearch : filteredBySearch.filter((m) => m.status === filter);
+  function handleDelete(manga: Manga) {
+    deleteManga(manga.id);
+    refresh();
+  }
 
-  const sortedMangas =
+  function handleProgress(changes: Partial<Manga>) {
+    if (progressManga) updateManga(progressManga.id, changes);
+    refresh();
+  }
+
+  const active = mangas.filter((m) => !m.archived);
+  const count = (f: Filter) =>
+    f === "all" ? active.length : active.filter((m) => m.status === f).length;
+
+  const bySearch = query ? searchMangas(active, query) : active;
+  const byStatus = filter === "all" ? bySearch : bySearch.filter((m) => m.status === filter);
+  const sorted =
     sortBy === "updated"
-      ? sortMangas(filteredByStatus)
-      : [...filteredByStatus].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      ? sortMangas(byStatus)
+      : [...byStatus].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>📚 Mes mangas</Text>
-
-      {/* Filtres */}
-      <View style={styles.row}>
-        {["all", "toRead", "reading", "completed", "abandoned"].map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setFilter(key as any)}
-            style={[styles.filterBtn, filter === key && styles.filterBtnActive]}
-          >
-            <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>
-              {labelStatus(key)}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.search}>
+        <Ionicons name="search-outline" size={18} color={t.textMuted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher un manga"
+          placeholderTextColor={t.textMuted}
+          accessibilityLabel="Rechercher un manga"
+          style={styles.searchInput}
+        />
       </View>
 
-      {/* Tri */}
-      <View style={styles.row}>
-        {["updated", "title"].map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setSortBy(key as any)}
-            style={[styles.sortBtn, sortBy === key && styles.sortBtnActive]}
-          >
-            <Text style={[styles.sortText, sortBy === key && styles.sortTextActive]}>
-              Trier par {key === "updated" ? "modification" : "titre"}
-            </Text>
-          </Pressable>
-        ))}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.chipsScroll}
+        contentContainerStyle={styles.chips}
+      >
+        {FILTERS.map((f) => {
+          const on = filter === f;
+          return (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                {f === "all" ? "Tous" : MANGA_STATUS_LABEL[f]} · {count(f)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.listHeader}>
+        <Text style={styles.listCount}>
+          {sorted.length} manga{sorted.length > 1 ? "s" : ""}
+        </Text>
+        <Pressable
+          onPress={() => setSortBy(sortBy === "updated" ? "title" : "updated")}
+          accessibilityRole="button"
+          hitSlop={12}
+        >
+          <Text style={styles.sortText}>
+            {sortBy === "updated" ? "Plus récents ↓" : "Titre A → Z"}
+          </Text>
+        </Pressable>
       </View>
 
-      {/* Liste */}
       <FlatList
-        data={sortedMangas}
+        style={styles.list}
+        data={sorted}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingVertical: 12 }}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        ListEmptyComponent={<Text style={styles.empty}>Aucun manga ici pour l'instant.</Text>}
         renderItem={({ item }) => (
-          <MangaCard
-            item={item}
-            selected={false}
-            onSelect={() => handleEdit(item)}
-            onDuplicate={() => handleDuplicate(item)}
-            onRemove={() => {
-              deleteManga(item.id);
-              setMangas(getMangas());
-            }}
-          />
+          <MangaCard item={item} onSelect={handleEdit} onUpdateProgress={setProgressManga} />
         )}
       />
 
-      {/* Bouton ajouter */}
       <Pressable
-        style={[styles.addBtn, { marginBottom: 24 + insets.bottom }]}
         onPress={handleAdd}
+        accessibilityRole="button"
+        style={[styles.addBtn, { bottom: 16 + insets.bottom }]}
       >
-        <Text style={styles.addText}>＋ Ajouter un manga</Text>
+        <Ionicons name="add" size={22} color={t.onAccent} />
+        <Text style={styles.addText}>Ajouter un manga</Text>
       </Pressable>
 
-      {/* Modale d’édition */}
       <EditMangaModal
         visible={modalVisible}
         initial={editingManga}
         onClose={() => setModalVisible(false)}
         onSubmit={handleSubmit}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
+      />
+
+      <UpdateMangaProgressModal
+        manga={progressManga}
+        onClose={() => setProgressManga(null)}
+        onSubmit={handleProgress}
       />
     </View>
   );
 }
 
-/**
- * Génère un ID unique (fallback si besoin)
- */
 function cryptoRandom(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return "id-" + Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-function labelStatus(key: string) {
-  switch (key) {
-    case "all":
-      return "Tous";
-    case "toRead":
-      return "À lire";
-    case "reading":
-      return "En cours";
-    case "completed":
-      return "Terminé";
-    case "abandoned":
-      return "Abandonné";
-    default:
-      return key;
-  }
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg, paddingHorizontal: 16, paddingTop: 12 },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      height: 48,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    searchInput: {
+      flex: 1,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(15),
+      color: t.text,
+    },
+    chipsScroll: { flexGrow: 0, marginTop: 14 },
+    chips: { gap: 8, paddingRight: 16 },
+    chip: {
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      justifyContent: "center",
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    chipOn: { backgroundColor: t.text, borderColor: t.text },
+    chipText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.textMuted },
+    chipTextOn: { color: t.bg },
+    listHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 14,
+      marginBottom: 8,
+    },
+    listCount: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
+    list: { flex: 1 },
+    empty: {
+      textAlign: "center",
+      marginTop: 40,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(14),
+      color: t.textMuted,
+    },
+    addBtn: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+  });
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 12,
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 12,
-  },
-  filterBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-  },
-  filterBtnActive: {
-    backgroundColor: "#12AAB8",
-  },
-  filterText: {
-    fontSize: 13,
-    color: "#111827",
-  },
-  filterTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  sortBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
-    backgroundColor: "#F3F4F6",
-  },
-  sortBtnActive: {
-    backgroundColor: "#0EA5E9",
-  },
-  sortText: {
-    fontSize: 12,
-    color: "#333",
-  },
-  sortTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  addBtn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  addText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});

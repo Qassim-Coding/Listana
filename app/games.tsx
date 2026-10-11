@@ -2,25 +2,17 @@ import { Stack } from "expo-router";
 import { Platform } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
 import GamesScreen from "../src/screens/GamesScreen";
+import { makeHeaderOptions } from "../src/theme";
+import { useTheme } from "../src/ThemeContext";
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
 export default function GamesPage() {
+  const t = useTheme();
   return (
     <>
       {!isWeb && (
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Jeux vidéo",
-            headerTintColor: "#12AAB8",
-            headerTitleStyle: {
-              fontFamily: "Poppins_700Bold",
-              fontSize: 22,
-              color: "#111827",
-            },
-          }}
-        />
+        <Stack.Screen options={{ ...makeHeaderOptions(t), title: "Jeux vidéo" }} />
       )}
       {isWeb && <WebBackButton title="Jeux vidéo" />}
       <GamesScreen />

@@ -3,8 +3,20 @@ import { nanoid } from "nanoid/non-secure";
 import { useEffect, useState } from "react";
 import { TVShow } from "../types/tvshow";
 
-type FilterKey = "all" | "watching" | "done" | "planning" | "dropped";
+type Status = TVShow["status"];
+type FilterKey = "all" | Status;
 type SortKey = "date" | "title" | "status";
+
+const STORAGE_KEY = "tvshows";
+
+export const TV_STATUS_LABEL: Record<Status, string> = {
+  planning: "À voir",
+  watching: "En cours",
+  done: "Terminé",
+  dropped: "Abandonné",
+};
+
+export type NewTVShow = Partial<TVShow> & { title: string };
 
 export function useTVShows() {
   const [shows, setShows] = useState<TVShow[]>([]);
@@ -14,114 +26,121 @@ export function useTVShows() {
 
   useEffect(() => {
     (async () => {
-      const raw = await AsyncStorage.getItem("tvshows");
-      if (raw) setShows(JSON.parse(raw));
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY);
+        if (raw) setShows(JSON.parse(raw));
+      } catch {}
       setLoading(false);
     })();
   }, []);
 
-  const persist = async (data: TVShow[]) => {
-    setShows(data);
-    await AsyncStorage.setItem("tvshows", JSON.stringify(data));
-  };
+  // Sauvegarde après chaque changement (même format qu'avant)
+  useEffect(() => {
+    if (!loading) AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(shows)).catch(() => {});
+  }, [shows, loading]);
 
-  const addShow = async (show: Partial<TVShow>) => {
+  function addShow(show: NewTVShow) {
+    const currentEpisode = show.currentEpisode ?? 0;
     const newShow: TVShow = {
       id: nanoid(),
-      title: show.title ?? "Série sans titre",
+      title: show.title || "Série sans titre",
       year: show.year,
       review: show.review ?? "",
-      status: "planning",
+      status: show.status ?? (currentEpisode > 0 ? "watching" : "planning"),
       startedAt: show.startedAt ?? new Date().toISOString(),
+      finishedAt: show.finishedAt,
       currentSeason: show.currentSeason ?? 1,
       totalSeasons: show.totalSeasons,
       episodesPerSeason: show.episodesPerSeason ?? 0,
-      currentEpisode: show.currentEpisode ?? 0,
+      currentEpisode,
       history: [],
       source: show.source,
       updatedAt: Date.now(),
     };
-    await persist([newShow, ...shows]);
-  };
+    setShows((prev) => [newShow, ...prev]);
+  }
 
-  const updateShow = async (id: string, changes: Partial<TVShow>) => {
-    const updated = shows.map((s) =>
-      s.id === id ? { ...s, ...changes, updatedAt: Date.now() } : s
+  function updateShow(id: string, changes: Partial<TVShow>) {
+    setShows((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, ...changes, updatedAt: Date.now() } : s))
     );
-    await persist(updated);
-  };
+  }
 
-  const removeShow = async (id: string) => {
-    await persist(shows.filter((s) => s.id !== id));
-  };
+  function removeShow(id: string) {
+    setShows((prev) => prev.filter((s) => s.id !== id));
+  }
 
-  const markDone = async (id: string) => {
-    const updated = shows.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            status: "done",
-            finishedAt: new Date().toISOString(),
-            updatedAt: Date.now(),
+  function markDone(id: string) {
+    updateShow(id, { status: "done", finishedAt: new Date().toISOString() });
+  }
+
+  // +1 épisode : passe à la saison suivante en fin de saison,
+  // et termine la série en fin de dernière saison (si le total est connu)
+  function incrementEpisode(id: string) {
+    setShows((prev) =>
+      prev.map((s): TVShow => {
+        if (s.id !== id) return s;
+        const now = new Date().toISOString();
+        const per = s.episodesPerSeason || 0;
+        let season = s.currentSeason || 1;
+        let episode = (s.currentEpisode ?? 0) + 1;
+        let status: Status = s.status === "done" ? "done" : "watching";
+        let finishedAt = s.finishedAt;
+
+        if (per > 0 && episode > per) {
+          const isLastSeason = !!s.totalSeasons && season >= s.totalSeasons;
+          if (isLastSeason) {
+            episode = per;
+          } else {
+            season += 1;
+            episode = 1;
           }
-        : s
+        }
+
+        if (per > 0 && s.totalSeasons && season >= s.totalSeasons && episode >= per) {
+          status = "done";
+          finishedAt = finishedAt ?? now;
+        }
+
+        return {
+          ...s,
+          currentSeason: season,
+          currentEpisode: episode,
+          status,
+          finishedAt,
+          startedAt: s.startedAt ?? now,
+          updatedAt: Date.now(),
+          history: [...(s.history ?? []), { season, episode, startedAt: now }],
+        };
+      })
     );
-    await persist(updated);
-  };
+  }
 
-  // ➕ Incrémenter un épisode vu
-  const incrementEpisode = async (id: string) => {
-    const updated = shows.map((s) => {
-      if (s.id !== id) return s;
-
-      const nextEpisode = (s.currentEpisode ?? 0) + 1;
-      const cappedEpisode = s.episodesPerSeason
-        ? Math.min(nextEpisode, s.episodesPerSeason)
-        : nextEpisode;
-
-      return {
-        ...s,
-        currentEpisode: cappedEpisode,
-        updatedAt: Date.now(),
-        history: [
-          ...(s.history ?? []),
-          {
-            season: s.currentSeason,
-            episode: cappedEpisode,
-            startedAt: new Date().toISOString(),
-          },
-        ],
-      };
-    });
-    await persist(updated);
-  };
-
-  // ▶️ Commencer un épisode (annotation simple)
-  const startEpisode = async (id: string) => {
-    const updated = shows.map((s) =>
-      s.id === id
-        ? {
-            ...s,
-            history: [
-              ...(s.history ?? []),
-              {
-                season: s.currentSeason,
-                episode: (s.currentEpisode ?? 0) + 1,
-                startedAt: new Date().toISOString(),
-              },
-            ],
-            updatedAt: Date.now(),
-          }
-        : s
+  function startEpisode(id: string) {
+    setShows((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              history: [
+                ...(s.history ?? []),
+                {
+                  season: s.currentSeason,
+                  episode: (s.currentEpisode ?? 0) + 1,
+                  startedAt: new Date().toISOString(),
+                },
+              ],
+              updatedAt: Date.now(),
+            }
+          : s
+      )
     );
-    await persist(updated);
-  };
+  }
 
   const visibleShows = shows
     .filter((s) => (filter === "all" ? true : s.status === filter))
     .sort((a, b) => {
-      if (sort === "title")
-        return a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
+      if (sort === "title") return a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
       if (sort === "status") return a.status.localeCompare(b.status);
       return b.updatedAt - a.updatedAt;
     });

@@ -1,28 +1,17 @@
 import { Stack } from "expo-router";
-import React from "react";
 import { Platform } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
 import NotesScreen from "../src/screens/NotesScreen";
+import { makeHeaderOptions } from "../src/theme";
+import { useTheme } from "../src/ThemeContext";
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
-export default function NotesPage() {
+export default function NotePage() {
+  const t = useTheme();
   return (
     <>
-      {!isWeb && (
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: "Bloc-notes",
-            headerTintColor: "#12AAB8",
-            headerTitleStyle: {
-              fontFamily: "Poppins_700Bold",
-              fontSize: 22,
-              color: "#111827",
-            },
-          }}
-        />
-      )}
+      {!isWeb && <Stack.Screen options={{ ...makeHeaderOptions(t), title: "Bloc-notes" }} />}
       {isWeb && <WebBackButton title="Bloc-notes" />}
       <NotesScreen />
     </>

@@ -1,118 +1,116 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../ThemeContext";
+import { Theme } from "../theme";
 import { Game } from "../types/game";
 
-export default function GameCard({
-  game,
-  onUpdate,
-  onEdit,
-}: {
-  game: Game;
-  onUpdate: (changes: Partial<Game>) => void;
-  onEdit?: (game: Game) => void;
-}) {
-  const isCompleted = game.status === "completed";
+export const GAME_STATUS_LABEL: Record<string, string> = {
+  toPlay: "À jouer",
+  playing: "En cours",
+  completed: "Terminé",
+  abandoned: "Abandonné",
+};
 
-  function handleMarkCompleted() {
-    if (!isCompleted) {
-      onUpdate({ status: "completed" });
-    }
-  }
+export const GAME_GENRE_LABEL: Record<string, string> = {
+  RPG: "RPG",
+  FPS: "FPS",
+  "indé": "Indé",
+  "rétro": "Rétro",
+  mobile: "Mobile",
+};
+
+type Props = {
+  game: Game;
+  onEdit: (game: Game) => void;
+  onQuickAction: (game: Game) => void;
+};
+
+export default function GameCard({ game, onEdit, onQuickAction }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const color = t.media.game;
+  const initial = game.title.trim().charAt(0).toUpperCase();
+  const completed = game.status === "completed";
+  const playing = game.status === "playing";
+
+  const meta = [game.platform, GAME_GENRE_LABEL[game.genre] ?? game.genre, GAME_STATUS_LABEL[game.status]]
+    .filter(Boolean)
+    .join(" · ");
+
+  let progress = "Pas encore commencé";
+  if (game.lastCheckpoint) progress = game.lastCheckpoint;
+  else if (completed) progress = "Terminé";
+  else if (playing) progress = "En cours";
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>{game.title}</Text>
-      <Text style={styles.meta}>
-        🎮 {game.genre} • 🕹️ {game.platform}
-      </Text>
-      <Text style={styles.status}>📌 {statusLabel(game.status)}</Text>
+    <Pressable
+      onPress={() => onEdit(game)}
+      accessibilityRole="button"
+      accessibilityLabel={`Modifier ${game.title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+    >
+      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
+        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
+      </View>
 
-      {game.lastCheckpoint && (
-        <Text style={styles.checkpoint}>
-          ⏱️ Dernier moment joué : {game.lastCheckpoint}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {game.title}
         </Text>
-      )}
-
-      {game.notes && (
-        <Text style={styles.notes}>
-          📝 {game.notes}
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
         </Text>
-      )}
+        <Text style={[styles.progress, { color }]} numberOfLines={1}>
+          {progress}
+        </Text>
+        {game.notes ? (
+          <Text style={styles.notes} numberOfLines={1}>
+            {game.notes}
+          </Text>
+        ) : null}
+      </View>
 
-      {!isCompleted && (
-        <Pressable style={styles.btn} onPress={handleMarkCompleted}>
-          <Text style={styles.btnText}>✅ Marquer comme terminé</Text>
+      {completed ? (
+        <View style={styles.doneBadge} accessibilityLabel="Terminé">
+          <Ionicons name="checkmark" size={20} color={t.textMuted} />
+        </View>
+      ) : (
+        <Pressable
+          onPress={() => onQuickAction(game)}
+          accessibilityRole="button"
+          accessibilityLabel={playing ? `Marquer ${game.title} comme terminé` : `Commencer ${game.title}`}
+          hitSlop={8}
+          style={styles.actionBtn}
+        >
+          <Ionicons name={playing ? "checkmark" : "play"} size={20} color={t.onAccent} />
         </Pressable>
       )}
-
-      {onEdit && (
-        <Pressable style={[styles.btn, { marginTop: 8 }]} onPress={() => onEdit(game)}>
-          <Text style={styles.btnText}>{"\u00C9"}diter</Text>
-        </Pressable>
-      )}
-    </View>
+    </Pressable>
   );
 }
 
-function statusLabel(status: Game["status"]) {
-  switch (status) {
-    case "toPlay":
-      return "À jouer";
-    case "playing":
-      return "En cours";
-    case "completed":
-      return "Terminé";
-    case "abandoned":
-      return "Abandonné";
-    default:
-      return "Inconnu";
-  }
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
+    body: { flex: 1, minWidth: 0 },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    meta: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 2 },
+    progress: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), marginTop: 8 },
+    notes: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 6, fontStyle: "italic" },
+    actionBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" },
+    doneBadge: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.cardAlt, alignItems: "center", justifyContent: "center" },
+  });
 }
-
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#F9FAFB",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 4,
-  },
-  meta: {
-    fontSize: 14,
-    color: "#555",
-    marginBottom: 4,
-  },
-  status: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 6,
-  },
-  checkpoint: {
-    fontSize: 13,
-    fontStyle: "italic",
-    marginBottom: 6,
-  },
-  notes: {
-    fontSize: 13,
-    marginBottom: 10,
-  },
-  btn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-  btnText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-});

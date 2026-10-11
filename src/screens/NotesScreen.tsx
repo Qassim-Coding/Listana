@@ -1,192 +1,182 @@
-import React, { useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import EditNoteModal from "../components/EditNoteModal";
 import NoteCard from "../components/NoteCard";
+import NoteEditorModal from "../components/NoteEditorModal";
 import {
-    addNote,
-    deleteNote,
-    duplicateNoteFrom,
-    getNotes,
-    initNotes,
-    searchNotes,
-    sortNotes,
-    updateNote,
+  addNote,
+  deleteNote,
+  duplicateNoteFrom,
+  getNotes,
+  initNotes,
+  searchNotes,
+  sortNotes,
+  updateNote,
 } from "../storage/note.store";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Note } from "../types/note";
 
 export default function NotesScreen() {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState<Note[]>(getNotes());
+  const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"modification" | "date">("modification");
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editing, setEditing] = useState<Note | null>(null);
+
   useEffect(() => {
     (async () => {
       await initNotes();
-      setNotes(getNotes());
+      setNotes([...getNotes()]);
     })();
   }, []);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"date" | "modification">("modification");
 
-  function handleAdd() {
-    setEditingNote(null);
-    setModalVisible(true);
+  const refresh = () => setNotes([...getNotes()]);
+
+  function openNew() {
+    setEditing(null);
+    setEditorVisible(true);
   }
 
-  function handleEdit(note: Note) {
-    setEditingNote(note);
-    setModalVisible(true);
+  function openNote(note: Note) {
+    setEditing(note);
+    setEditorVisible(true);
   }
 
   function handleSubmit(changes: Partial<Note>) {
-    if (editingNote) {
-      updateNote(editingNote.id, changes);
+    if (editing) {
+      updateNote(editing.id, changes);
     } else {
       const now = Date.now();
-      const newNote: Note = {
-        id: Date.now().toString(),
+      addNote({
+        id: now.toString(),
         title: (changes.title || "Sans titre") as string,
         content: changes.content || "",
         createdAt: now,
         updatedAt: now,
         archived: false,
-      };
-      addNote(newNote);
+      });
     }
-    setNotes(getNotes());
+    refresh();
   }
 
   function handleDuplicate(note: Note) {
-    const copy = duplicateNoteFrom(note);
-    addNote(copy);
-    setNotes(getNotes());
+    addNote(duplicateNoteFrom(note));
+    refresh();
   }
 
-  // 🔎 Recherche + tri
+  function handleDelete(note: Note) {
+    deleteNote(note.id);
+    refresh();
+  }
+
   const filtered = query ? searchNotes(notes, query) : notes;
-  const sortedNotes = sortBy === "modification" 
-    ? sortNotes(filtered) 
-    : [...filtered].filter((n) => !n.archived).sort((a, b) => b.createdAt - a.createdAt);
+  const shown =
+    sortBy === "modification"
+      ? sortNotes(filtered)
+      : [...filtered].filter((n) => !n.archived).sort((a, b) => b.createdAt - a.createdAt);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>📝 Mes notes</Text>
-
-      {/* Barre de recherche */}
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Rechercher une note..."
-        style={styles.searchInput}
-      />
-
-      {/* Tri */}
-      <View style={styles.row}>
-        {["modification", "date"].map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setSortBy(key as any)}
-            style={[styles.sortBtn, sortBy === key && styles.sortBtnActive]}
-          >
-            <Text style={[styles.sortText, sortBy === key && styles.sortTextActive]}>
-              Trier par {key === "modification" ? "modification" : "date de création"}
-            </Text>
-          </Pressable>
-        ))}
+      <View style={styles.search}>
+        <Ionicons name="search-outline" size={18} color={t.textMuted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher dans les notes"
+          placeholderTextColor={t.textMuted}
+          accessibilityLabel="Rechercher dans les notes"
+          style={styles.searchInput}
+        />
       </View>
 
-      {/* Liste */}
-      {sortedNotes.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Aucune note pour l'instant</Text>
-          <Text style={styles.emptySub}>Crée une note avec le bouton ci-dessous.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={sortedNotes}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 12 }}
-          renderItem={({ item }) => (
-            <NoteCard
-              item={item}
-              selected={false}
-              onSelect={() => handleEdit(item)}
-              onEdit={() => handleEdit(item)}
-              onRemove={() => {
-                deleteNote(item.id);
-                setNotes(getNotes());
-              }}
-              onDuplicate={() => handleDuplicate(item)}
-            />
-          )}
-        />
-      )}
+      <View style={styles.listHeader}>
+        <Text style={styles.listCount}>
+          {shown.length} note{shown.length > 1 ? "s" : ""}
+        </Text>
+        <Pressable
+          onPress={() => setSortBy(sortBy === "modification" ? "date" : "modification")}
+          accessibilityRole="button"
+          hitSlop={12}
+        >
+          <Text style={styles.sortText}>
+            {sortBy === "modification" ? "Dernière modification ↓" : "Date de création ↓"}
+          </Text>
+        </Pressable>
+      </View>
 
-      {/* Bouton ajouter */}
-      <Pressable
-        style={[styles.addBtn, { marginBottom: 24 + insets.bottom }]}
-        onPress={handleAdd}
-      >
-        <Text style={styles.addText}>＋ Nouvelle note</Text>
+      <FlatList
+        style={styles.list}
+        data={shown}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        ListEmptyComponent={
+          <Text style={styles.empty}>Aucune note pour l'instant. Crée-en une avec le bouton ci-dessous.</Text>
+        }
+        renderItem={({ item }) => <NoteCard item={item} onOpen={openNote} />}
+      />
+
+      <Pressable onPress={openNew} accessibilityRole="button" style={[styles.addBtn, { bottom: 16 + insets.bottom }]}>
+        <Ionicons name="add" size={22} color={t.onAccent} />
+        <Text style={styles.addText}>Nouvelle note</Text>
       </Pressable>
 
-      {/* Modale */}
-      <EditNoteModal
-        visible={modalVisible}
-        initial={editingNote}
-        onClose={() => setModalVisible(false)}
+      <NoteEditorModal
+        visible={editorVisible}
+        initial={editing}
+        onClose={() => setEditorVisible(false)}
         onSubmit={handleSubmit}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  heading: { fontSize: 22, fontWeight: "bold", marginBottom: 12 },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    marginBottom: 12,
-    fontSize: 14,
-    backgroundColor: "#FAFAFA",
-  },
-  row: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 12,
-  },
-  sortBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
-    backgroundColor: "#F3F4F6",
-  },
-  sortBtnActive: {
-    backgroundColor: "#0EA5E9",
-  },
-  sortText: {
-    fontSize: 12,
-    color: "#333",
-  },
-  sortTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  addBtn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  addText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40 },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 6 },
-  emptySub: { fontSize: 13, color: "#6B7280" },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg, paddingHorizontal: 16, paddingTop: 12 },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      height: 48,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    searchInput: { flex: 1, fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.text },
+    listHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14, marginBottom: 8 },
+    listCount: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
+    list: { flex: 1 },
+    empty: {
+      textAlign: "center",
+      marginTop: 40,
+      paddingHorizontal: 24,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(14),
+      lineHeight: t.fs(20),
+      color: t.textMuted,
+    },
+    addBtn: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+  });
+}

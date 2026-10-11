@@ -5,29 +5,22 @@ import MediaCard from "./MediaCard";
 type Item = { key: string; label: string; emoji: string };
 type Props = {
   items: Item[];
+  counts?: Record<string, number>;
   onPick: (key: string) => void;
 };
 
-export default function MediaGrid({ items, onPick }: Props) {
+export default function MediaGrid({ items, counts, onPick }: Props) {
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 768; // Tablette/Desktop
+  const isDesktop = width >= 768;
 
   return (
-    <View style={[
-      styles.grid,
-      {
-        justifyContent: isDesktop ? "center" : "space-between",
-        gap: isDesktop ? 16 : 0, // Pas de gap sur mobile (on utilise marginBottom des cartes)
-        maxWidth: isDesktop ? 1200 : undefined,
-        alignSelf: isDesktop ? "center" : undefined,
-        width: isDesktop ? "100%" : undefined,
-      }
-    ]}>
+    <View style={[styles.grid, { justifyContent: isDesktop ? "center" : "flex-start" }]}>
       {items.map((m) => (
         <MediaCard
           key={m.key}
-          emoji={m.emoji}
+          mediaKey={m.key}
           label={m.label}
+          count={counts?.[m.key]}
           onPress={() => onPick(m.key)}
         />
       ))}
@@ -36,8 +29,5 @@ export default function MediaGrid({ items, onPick }: Props) {
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
 });

@@ -1,81 +1,85 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../ThemeContext";
+import { Theme } from "../theme";
 
 type Props = {
   title: string;
 };
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
 
 export default function WebBackButton({ title }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+
   // N'affiche rien sur mobile (le header natif s'en occupe)
   if (!isWeb) return null;
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace("/");
+  }
 
   return (
     <View style={styles.header}>
       <Pressable
-        onPress={() => router.back()}
-        style={({ pressed }) => [
-          styles.backButton,
-          pressed && styles.backButtonPressed,
-        ]}
+        onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel="Retour"
+        style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
       >
-        <Text style={styles.backArrow}>←</Text>
+        <Ionicons name="chevron-back" size={22} color={t.text} />
       </Pressable>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title} numberOfLines={1}>
+        {title}
+      </Text>
       <View style={styles.spacer} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    // @ts-ignore - web-only
-    position: "sticky",
-    top: 0,
-    zIndex: 100,
-  },
-  backButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    // @ts-ignore - web-only
-    cursor: "pointer",
-    // @ts-ignore - web-only
-    transition: "background-color 0.2s ease",
-  },
-  backButtonPressed: {
-    backgroundColor: "#F3F4F6",
-  },
-  backArrow: {
-    fontSize: 28,
-    color: "#12AAB8",
-    fontWeight: "bold",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827",
-    fontFamily: "Poppins_700Bold",
-    position: "absolute",
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    // @ts-ignore
-    pointerEvents: "none",
-  },
-  spacer: {
-    width: 80, // Pour équilibrer le layout
-  },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: t.bg,
+      borderBottomWidth: 1,
+      borderBottomColor: t.border,
+      // @ts-ignore - web-only
+      position: "sticky",
+      top: 0,
+      zIndex: 100,
+    },
+    backButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+      alignItems: "center",
+      justifyContent: "center",
+      // @ts-ignore - web-only
+      cursor: "pointer",
+    },
+    title: {
+      position: "absolute",
+      left: 72,
+      right: 72,
+      textAlign: "center",
+      fontFamily: t.fonts.bold,
+      fontSize: t.fs(20),
+      color: t.text,
+      // @ts-ignore
+      pointerEvents: "none",
+    },
+    spacer: { width: 44 },
+  });
+}

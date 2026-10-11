@@ -1,101 +1,116 @@
-import React from "react";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "../ThemeContext";
+import { Theme } from "../theme";
 import { Podcast } from "../types/podcast";
+
+export const PODCAST_STATUS_LABEL: Record<string, string> = {
+  toListen: "À écouter",
+  listening: "En cours",
+  completed: "Terminé",
+  abandoned: "Abandonné",
+};
+
+export const PODCAST_KIND_LABEL: Record<string, string> = {
+  podcast: "Podcast",
+  audiobook: "Livre audio",
+};
 
 type Props = {
   item: Podcast;
-  selected?: boolean;
-  onSelect: (podcast: Podcast) => void;
-  onDuplicate?: (podcast: Podcast) => void;
+  onEdit: (podcast: Podcast) => void;
+  onNextEpisode: (podcast: Podcast) => void;
 };
 
-export default function PodcastCard({ item, selected, onSelect, onDuplicate }: Props) {
+export default function PodcastCard({ item, onEdit, onNextEpisode }: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
+  const color = t.media.podcast;
+  const title = item.title || "Sans titre";
+  const kind = item.kind ?? "podcast";
+  const done = item.status === "completed";
+  const last = (item.lastEpisode ?? "").trim();
+
+  let progress = "Pas encore commencé";
+  if (last && /^\d+$/.test(last)) {
+    progress = `${kind === "audiobook" ? "Chapitre" : "Épisode"} ${last}`;
+  } else if (last) {
+    progress = last;
+  }
+
+  const meta = [item.host, PODCAST_KIND_LABEL[kind], PODCAST_STATUS_LABEL[item.status]]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <Pressable
-      onPress={() => onSelect(item)}
-      style={[styles.card, selected && styles.cardSelected]}
+      onPress={() => onEdit(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Modifier ${title}`}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
     >
-      {/* Titre + date */}
-      <View style={styles.row}>
-        <Text style={styles.title}>{item.title || "Sans titre"}</Text>
-        <Text style={styles.date}>
-          {new Date(item.updatedAt).toLocaleDateString()}
-        </Text>
+      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
+        <Ionicons name={kind === "audiobook" ? "book-outline" : "mic-outline"} size={26} color={color} />
       </View>
 
-      {/* Hôte + dernier épisode */}
-      <Text style={styles.subtitle}>
-        {item.host ? `${item.host} • ` : ""}
-        {item.lastEpisode ? `Épisode ${item.lastEpisode}` : ""}
-      </Text>
-
-      {/* Notes éventuelles */}
-      {item.notes ? (
-        <Text style={styles.notes} numberOfLines={2}>
-          {item.notes}
+      <View style={styles.body}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
         </Text>
-      ) : null}
+        <Text style={styles.meta} numberOfLines={1}>
+          {meta}
+        </Text>
+        <Text style={[styles.progress, { color }]} numberOfLines={1}>
+          {progress}
+        </Text>
+        {item.notes ? (
+          <Text style={styles.notes} numberOfLines={1}>
+            {item.notes}
+          </Text>
+        ) : null}
+      </View>
 
-      {/* Bouton dupliquer (optionnel) */}
-      {onDuplicate && (
+      {done ? (
+        <View style={styles.doneBadge} accessibilityLabel="Terminé">
+          <Ionicons name="checkmark" size={20} color={t.textMuted} />
+        </View>
+      ) : (
         <Pressable
-          style={styles.duplicateBtn}
-          onPress={() => onDuplicate(item)}
+          onPress={() => onNextEpisode(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`Épisode suivant de ${title}`}
+          hitSlop={8}
+          style={styles.plusBtn}
         >
-          <Text style={styles.duplicateText}>📑 Dupliquer</Text>
+          <Text style={styles.plusText}>+1</Text>
         </Pressable>
       )}
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  cardSelected: {
-    backgroundColor: "#E0F2FE",
-    borderColor: "#0EA5E9",
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: "600",
-    flex: 1,
-  },
-  date: {
-    fontSize: 11,
-    color: "#6B7280",
-    marginLeft: 8,
-  },
-  subtitle: {
-    fontSize: 12,
-    color: "#374151",
-    marginBottom: 6,
-  },
-  notes: {
-    fontSize: 12,
-    color: "#4B5563",
-    marginBottom: 6,
-  },
-  duplicateBtn: {
-    marginTop: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-  },
-  duplicateText: {
-    fontSize: 12,
-    color: "#111827",
-  },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    card: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      padding: 12,
+      marginBottom: 10,
+      borderRadius: t.radius.card,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cover: { width: 56, height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+    body: { flex: 1, minWidth: 0 },
+    title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    meta: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 2 },
+    progress: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), marginTop: 8 },
+    notes: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 6, fontStyle: "italic" },
+    plusBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent, alignItems: "center", justifyContent: "center" },
+    plusText: { fontFamily: t.fonts.bold, fontSize: t.fs(14), color: t.onAccent },
+    doneBadge: { width: 44, height: 44, borderRadius: 22, backgroundColor: t.cardAlt, alignItems: "center", justifyContent: "center" },
+  });
+}

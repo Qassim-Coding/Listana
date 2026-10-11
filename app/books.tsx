@@ -1,245 +1,236 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-    FlatList,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AddBookModal from "../src/components/AddBookModal";
-import BookCard from "../src/components/BookCard";
+import BookCard, { BOOK_STATUS_LABEL } from "../src/components/BookCard";
+import UpdateBookPageModal from "../src/components/UpdateBookPageModal";
 import WebBackButton from "../src/components/WebBackButton";
 import { useBooks } from "../src/hooks/useBooks";
+import { Theme, makeHeaderOptions } from "../src/theme";
+import { useTheme } from "../src/ThemeContext";
+import { Book, BookStatus } from "../src/types/book";
 
-const isWeb = Platform.OS === 'web';
+const isWeb = Platform.OS === "web";
+
+type Filter = "all" | BookStatus;
+const FILTERS: Filter[] = ["all", "in_progress", "planning", "done"];
+const SORT_LABEL = { date: "Plus récents ↓", title: "Titre A → Z", status: "Par statut" } as const;
+const NEXT_SORT = { date: "title", title: "status", status: "date" } as const;
 
 export default function BooksScreen() {
-  const {
-    books,
-    visibleBooks,
-    loading,
-    addBook,
-    updateProgress,
-    updateBook,
-    markDone,
-    updateNotes,
-    removeBook,
-    doneCount,
-    filter,
-    setFilter,
-    sort,
-    setSort,
-  } = useBooks();
-
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
-  const [open, setOpen] = useState(false);
+  const { books, visibleBooks, loading, addBook, updateProgress, updateBook, markDone, removeBook, sort, setSort } =
+    useBooks();
+
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Book | null>(null);
+  const [pageBook, setPageBook] = useState<Book | null>(null);
+
+  const count = (f: Filter) => (f === "all" ? books.length : books.filter((b) => b.status === f).length);
+
+  const q = query.trim().toLowerCase();
+  const shown = visibleBooks
+    .filter((b) => (filter === "all" ? true : b.status === filter))
+    .filter((b) =>
+      q ? b.title.toLowerCase().includes(q) || (b.author ?? "").toLowerCase().includes(q) : true
+    );
+
+  function openAdd() {
+    setEditing(null);
+    setFormOpen(true);
+  }
+
+  function openEdit(book: Book) {
+    setEditing(book);
+    setFormOpen(true);
+  }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.select({ ios: "padding", android: undefined })}
-        keyboardVerticalOffset={insets.top + 8}
-      >
-        {/* Native header via Expo Router */}
-        {!isWeb && (
-          <Stack.Screen
-            options={{
-              headerShown: true,
-              title: "Mes Livres",
-              headerTitleStyle: { fontFamily: "Poppins_700Bold", fontSize: 22, color: "#111827" },
-              headerBackTitleVisible: false,
-              headerTintColor: "#12AAB8",
-            }}
-          />
-        )}
-        {isWeb && <WebBackButton title="Mes Livres" />}
+    <View style={styles.screen}>
+      {!isWeb && <Stack.Screen options={{ ...makeHeaderOptions(t), title: "Livres" }} />}
+      {isWeb && <WebBackButton title="Livres" />}
 
-        {/* Contenu */}
-        {loading ? (
-          <View style={styles.center}>
-            <Text>Chargement…</Text>
+      {loading ? (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={t.accent} />
+        </View>
+      ) : (
+        <View style={styles.container}>
+          <View style={styles.search}>
+            <Ionicons name="search-outline" size={18} color={t.textMuted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Rechercher un livre ou un auteur"
+              placeholderTextColor={t.textMuted}
+              accessibilityLabel="Rechercher un livre"
+              style={styles.searchInput}
+            />
           </View>
-        ) : books.length === 0 ? (
-          <View style={[styles.empty, { paddingBottom: 24 + insets.bottom }]}>
-            <Text style={styles.emptyTitle}>Aucun livre pour l’instant</Text>
-            <Text style={styles.emptySub}>
-              Ajoute un livre avec le bouton ci-dessous. Les pages sont
-              optionnelles et tu peux ajouter des notes.
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chipsScroll}
+            contentContainerStyle={styles.chips}
+          >
+            {FILTERS.map((f) => {
+              const on = filter === f;
+              return (
+                <Pressable
+                  key={f}
+                  onPress={() => setFilter(f)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  style={[styles.chip, on && styles.chipOn]}
+                >
+                  <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                    {f === "all" ? "Tous" : BOOK_STATUS_LABEL[f]} · {count(f)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.listHeader}>
+            <Text style={styles.listCount}>
+              {shown.length} livre{shown.length > 1 ? "s" : ""}
             </Text>
+            <Pressable onPress={() => setSort(NEXT_SORT[sort])} accessibilityRole="button" hitSlop={12}>
+              <Text style={styles.sortText}>{SORT_LABEL[sort]}</Text>
+            </Pressable>
           </View>
-        ) : (
-          <>
-            {/* Filtres & Tri (inchangés) */}
-            <View style={styles.controlsRow}>
-              <View style={styles.segment}>
-                {[
-                  { key: "all", label: "Tous" },
-                  { key: "in_progress", label: "En cours" },
-                  { key: "done", label: "Terminés" },
-                ].map((opt) => (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => setFilter(opt.key as any)}
-                    style={[
-                      styles.segmentBtn,
-                      filter === (opt.key as any) && styles.segmentBtnActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        filter === (opt.key as any) &&
-                          styles.segmentTextActive,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              <View style={styles.segment}>
-                {[
-                  { key: "date", label: "Date" },
-                  { key: "title", label: "Titre" },
-                  { key: "status", label: "Statut" },
-                ].map((opt) => (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => setSort(opt.key as any)}
-                    style={[
-                      styles.segmentBtn,
-                      sort === (opt.key as any) && styles.segmentBtnActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        sort === (opt.key as any) &&
-                          styles.segmentTextActive,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
 
           <FlatList
-            data={visibleBooks}
+            style={styles.list}
+            data={shown}
             keyExtractor={(b) => b.id}
+            contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+            ListEmptyComponent={
+              <Text style={styles.empty}>
+                Aucun livre ici pour l'instant. Les pages sont optionnelles.
+              </Text>
+            }
             renderItem={({ item }) => (
-              <BookCard
-                book={item}
-                onUpdateProgress={(id, page) => updateProgress(id, page)}
-                onMarkDone={(id) => markDone(id)}
-                onRemove={(id) => removeBook(id)}
-                onEditNotes={(id, notes) => updateNotes(id, notes)}
-                onEditBook={(id, changes) => updateBook(id, changes)}
-              />
+              <BookCard book={item} onEdit={openEdit} onUpdatePage={setPageBook} />
             )}
-            contentContainerStyle={{
-                paddingHorizontal: 16,
-                paddingTop: 8,
-                // Espace en bas pour le FAB + zone sûre
-                paddingBottom: 24 + insets.bottom + 64,
-              }}
-            />
-          </>
-        )}
+          />
+        </View>
+      )}
 
-        {/* Bouton ajouter (style jeux-vidéos) */}
-        <Pressable
-          style={[styles.addBtn, { marginBottom: 24 + insets.bottom }]}
-          onPress={() => setOpen(true)}
-        >
-          <Text style={styles.addText}>＋ Ajouter un livre</Text>
-        </Pressable>
+      <Pressable
+        onPress={openAdd}
+        accessibilityRole="button"
+        style={[styles.addBtn, { bottom: 16 + insets.bottom }]}
+      >
+        <Ionicons name="add" size={22} color={t.onAccent} />
+        <Text style={styles.addText}>Ajouter un livre</Text>
+      </Pressable>
 
-        {/* Modale d’ajout */}
-        <AddBookModal
-          visible={open}
-          onClose={() => setOpen(false)}
-          onSubmit={({ title, author, totalPages, notes }) => {
-            addBook({ title, author, totalPages, notes });
-            setOpen(false);
-          }}
-        />
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <AddBookModal
+        visible={formOpen}
+        onClose={() => setFormOpen(false)}
+        heading={editing ? "Modifier le livre" : "Ajouter un livre"}
+        initial={
+          editing
+            ? { title: editing.title, author: editing.author, totalPages: editing.totalPages, notes: editing.notes }
+            : undefined
+        }
+        onSubmit={(data) => {
+          if (editing) updateBook(editing.id, data);
+          else addBook(data);
+        }}
+        onDelete={editing ? () => removeBook(editing.id) : undefined}
+      />
+
+      <UpdateBookPageModal
+        book={pageBook}
+        onClose={() => setPageBook(null)}
+        onSave={(page) => pageBook && updateProgress(pageBook.id, page)}
+        onMarkDone={() => pageBook && markDone(pageBook.id)}
+      />
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#F9FAFB" },
-
-  header: { paddingHorizontal: 16, paddingBottom: 8 },
-  title: { fontSize: 22, fontFamily: "Poppins_700Bold", color: "#111827" },
-  meta: { color: "#6B7280", marginTop: 2, fontFamily: "Poppins_400Regular" },
-
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
-
-  empty: { paddingHorizontal: 24, alignItems: "center" },
-  emptyTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 16,
-    color: "#0E5A90",
-  },
-  emptySub: { color: "#6B7280", textAlign: "center", marginTop: 6 },
-
-  // plus de backBtn/backText: on utilise le header natif
-
-  addBtn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginHorizontal: 16,
-    marginTop: 12,
-  },
-  addText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-
-  // Filtres & tri (inchangés)
-  controlsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 4,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  segment: {
-    flexDirection: "row",
-    backgroundColor: "#EEF2F7",
-    borderRadius: 999,
-    padding: 4,
-  },
-  segmentBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  segmentBtnActive: {
-    backgroundColor: "#12AAB8",
-  },
-  segmentText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: "#0F172A",
-  },
-  segmentTextActive: {
-    color: "#fff",
-  },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    screen: { flex: 1, backgroundColor: t.bg },
+    container: { flex: 1, paddingHorizontal: 16, paddingTop: 12 },
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      height: 48,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    searchInput: { flex: 1, fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.text },
+    chipsScroll: { flexGrow: 0, marginTop: 14 },
+    chips: { gap: 8, paddingRight: 16 },
+    chip: {
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      justifyContent: "center",
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    chipOn: { backgroundColor: t.text, borderColor: t.text },
+    chipText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.textMuted },
+    chipTextOn: { color: t.bg },
+    listHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginTop: 14,
+      marginBottom: 8,
+    },
+    listCount: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
+    list: { flex: 1 },
+    empty: {
+      textAlign: "center",
+      marginTop: 40,
+      paddingHorizontal: 24,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(14),
+      lineHeight: t.fs(20),
+      color: t.textMuted,
+    },
+    addBtn: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+  });
+}

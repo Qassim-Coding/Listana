@@ -1,222 +1,268 @@
-import React, { useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import EditPodcastModal from "../components/EditPodcastModal";
-import PodcastCard from "../components/PodcastCard";
+import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useMemo, useState } from "react";
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import PodcastCard, { PODCAST_STATUS_LABEL } from "../components/PodcastCard";
+import PodcastFormModal from "../components/PodcastFormModal";
 import {
   addPodcast,
+  deletePodcast,
   duplicatePodcastFrom,
   getPodcasts,
+  initPodcasts,
+  searchPodcasts,
   sortPodcasts,
   updatePodcast,
 } from "../storage/podcast.store";
+import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Podcast } from "../types/podcast";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+type Filter = "all" | Podcast["status"];
+type KindFilter = "all" | "podcast" | "audiobook";
+
+const FILTERS: Filter[] = ["all", "listening", "toListen", "completed", "abandoned"];
+const KINDS: { key: KindFilter; label: string }[] = [
+  { key: "all", label: "Tout" },
+  { key: "podcast", label: "Podcasts" },
+  { key: "audiobook", label: "Livres audio" },
+];
+
+// Remplace le dernier nombre par nombre + 1 ("Ép. 41" → "Ép. 42", vide → "1")
+function bumpEpisode(value?: string): string | null {
+  const raw = (value ?? "").trim();
+  if (!raw) return "1";
+  const m = raw.match(/(\d+)(?!.*\d)/);
+  if (!m || m.index === undefined) return null;
+  const next = String(parseInt(m[1], 10) + 1);
+  return raw.slice(0, m.index) + next + raw.slice(m.index + m[1].length);
+}
 
 export default function PodcastsScreen() {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
   const [podcasts, setPodcasts] = useState<Podcast[]>(getPodcasts());
-  const [filter, setFilter] = useState<"all" | Podcast["status"]>("all");
-  const [typeFilter, setTypeFilter] = useState<"all" | "podcast" | "audiobook">("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [sortBy, setSortBy] = useState<"updated" | "title">("updated");
+  const [query, setQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingPodcast, setEditingPodcast] = useState<Podcast | null>(null);
+  const [editing, setEditing] = useState<Podcast | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      await initPodcasts();
+      setPodcasts([...getPodcasts()]);
+    })();
+  }, []);
+
+  const refresh = () => setPodcasts([...getPodcasts()]);
 
   function handleAdd() {
-    setEditingPodcast(null);
+    setEditing(null);
     setModalVisible(true);
   }
 
-  function handleEdit(podcast: Podcast) {
-    setEditingPodcast(podcast);
+  function handleEdit(p: Podcast) {
+    setEditing(p);
     setModalVisible(true);
   }
 
   function handleSubmit(changes: Partial<Podcast>) {
-    if (editingPodcast) {
-      updatePodcast(editingPodcast.id, changes);
+    if (editing) {
+      updatePodcast(editing.id, changes);
     } else {
       const now = Date.now();
-      const newPodcast: Podcast = {
-        id: Date.now().toString(),
+      addPodcast({
+        id: now.toString(),
         title: (changes.title || "Sans titre") as string,
         host: changes.host,
         status: (changes.status || "toListen") as Podcast["status"],
-        kind: (changes as any).kind ?? "podcast",
+        kind: changes.kind ?? "podcast",
         notes: changes.notes,
         lastEpisode: changes.lastEpisode,
         createdAt: now,
         updatedAt: now,
         archived: false,
-      };
-      addPodcast(newPodcast);
+      } as Podcast);
     }
-    setPodcasts(getPodcasts());
-    setModalVisible(false);
-    setEditingPodcast(null);
+    refresh();
   }
 
-  function handleDuplicate(podcast: Podcast) {
-    const copy = duplicatePodcastFrom(podcast);
-    addPodcast(copy);
-    setPodcasts(getPodcasts());
-    setModalVisible(false);
-    setEditingPodcast(null);
+  function handleNextEpisode(p: Podcast) {
+    const next = bumpEpisode(p.lastEpisode);
+    if (next === null) {
+      handleEdit(p);
+      return;
+    }
+    updatePodcast(p.id, {
+      lastEpisode: next,
+      status: p.status === "toListen" || p.status === "abandoned" ? "listening" : p.status,
+    });
+    refresh();
   }
 
-  const filteredByType =
-    typeFilter === "all" ? podcasts : podcasts.filter((p) => (p.kind ?? "podcast") === typeFilter);
+  function handleDuplicate(p: Podcast) {
+    addPodcast(duplicatePodcastFrom(p));
+    refresh();
+  }
 
-  const filteredByStatus =
-    filter === "all" ? filteredByType : filteredByType.filter((p) => p.status === filter);
+  function handleDelete(p: Podcast) {
+    deletePodcast(p.id);
+    refresh();
+  }
 
-  const sortedPodcasts =
+  const active = podcasts
+    .filter((p) => !p.archived)
+    .filter((p) => (kindFilter === "all" ? true : (p.kind ?? "podcast") === kindFilter));
+  const count = (f: Filter) => (f === "all" ? active.length : active.filter((p) => p.status === f).length);
+
+  const bySearch = query ? searchPodcasts(active, query) : active;
+  const byStatus = filter === "all" ? bySearch : bySearch.filter((p) => p.status === filter);
+  const shown =
     sortBy === "updated"
-      ? sortPodcasts(filteredByStatus)
-      : [...filteredByStatus].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      ? sortPodcasts(byStatus)
+      : [...byStatus].sort((a, b) => (a.title || "").localeCompare(b.title || ""));
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Mes podcasts</Text>
-
-      {/* Filtre Type */}
-      <View style={styles.row}>
-        {[
-          { key: "all", label: "Tous types" },
-          { key: "podcast", label: "Podcast" },
-          { key: "audiobook", label: "Livre audio" },
-        ].map((opt) => (
-          <Pressable
-            key={opt.key}
-            onPress={() => setTypeFilter(opt.key as any)}
-            style={[styles.filterBtn, typeFilter === (opt.key as any) && styles.filterBtnActive]}
-          >
-            <Text style={[styles.filterText, typeFilter === (opt.key as any) && styles.filterTextActive]}>
-              {opt.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Filtres Statut */}
-      <View style={styles.row}>
-        {["all", "toListen", "listening", "completed", "abandoned"].map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setFilter(key as any)}
-            style={[styles.filterBtn, filter === key && styles.filterBtnActive]}
-          >
-            <Text style={[styles.filterText, filter === key && styles.filterTextActive]}>
-              {labelStatus(key)}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Tri */}
-      <View style={styles.row}>
-        {["updated", "title"].map((key) => (
-          <Pressable
-            key={key}
-            onPress={() => setSortBy(key as any)}
-            style={[styles.sortBtn, sortBy === key && styles.sortBtnActive]}
-          >
-            <Text style={[styles.sortText, sortBy === key && styles.sortTextActive]}>
-              Trier par {key === "updated" ? "modification" : "titre"}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {/* Liste */}
-      {sortedPodcasts.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>Aucun podcast pour l'instant</Text>
-          <Text style={styles.emptySub}>Ajoute un podcast avec le bouton ci-dessous.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={sortedPodcasts}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingVertical: 12 }}
-          renderItem={({ item }) => (
-            <PodcastCard
-              item={item}
-              selected={false}
-              onSelect={() => handleEdit(item)}
-              onDuplicate={() => handleDuplicate(item)}
-            />
-          )}
+      <View style={styles.search}>
+        <Ionicons name="search-outline" size={18} color={t.textMuted} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Rechercher"
+          placeholderTextColor={t.textMuted}
+          accessibilityLabel="Rechercher un podcast ou un livre audio"
+          style={styles.searchInput}
         />
-      )}
+      </View>
 
-      {/* Bouton ajouter */}
-      <Pressable
-        style={[styles.addBtn, { marginBottom: 24 + insets.bottom }]}
-        onPress={handleAdd}
-      >
-        <Text style={styles.addText}>＋ Ajouter un podcast</Text>
+      <View style={styles.segment}>
+        {KINDS.map((k) => {
+          const on = kindFilter === k.key;
+          return (
+            <Pressable
+              key={k.key}
+              onPress={() => setKindFilter(k.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.segmentBtn, on && styles.segmentBtnOn]}
+            >
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{k.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsScroll} contentContainerStyle={styles.chips}>
+        {FILTERS.map((f) => {
+          const on = filter === f;
+          return (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                {f === "all" ? "Tous" : PODCAST_STATUS_LABEL[f]} · {count(f)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      <View style={styles.listHeader}>
+        <Text style={styles.listCount}>
+          {shown.length} élément{shown.length > 1 ? "s" : ""}
+        </Text>
+        <Pressable onPress={() => setSortBy(sortBy === "updated" ? "title" : "updated")} accessibilityRole="button" hitSlop={12}>
+          <Text style={styles.sortText}>{sortBy === "updated" ? "Plus récents ↓" : "Titre A → Z"}</Text>
+        </Pressable>
+      </View>
+
+      <FlatList
+        style={styles.list}
+        data={shown}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        ListEmptyComponent={<Text style={styles.empty}>Rien ici pour l'instant.</Text>}
+        renderItem={({ item }) => (
+          <PodcastCard item={item} onEdit={handleEdit} onNextEpisode={handleNextEpisode} />
+        )}
+      />
+
+      <Pressable onPress={handleAdd} accessibilityRole="button" style={[styles.addBtn, { bottom: 16 + insets.bottom }]}>
+        <Ionicons name="add" size={22} color={t.onAccent} />
+        <Text style={styles.addText}>Ajouter</Text>
       </Pressable>
 
-      {/* Modale */}
-      <EditPodcastModal
+      <PodcastFormModal
         visible={modalVisible}
-        initial={editingPodcast}
+        initial={editing}
         onClose={() => setModalVisible(false)}
         onSubmit={handleSubmit}
+        onDuplicate={handleDuplicate}
+        onDelete={handleDelete}
       />
     </View>
   );
 }
 
-function labelStatus(key: string) {
-  switch (key) {
-    case "all":
-      return "Tous";
-    case "toListen":
-      return "À écouter";
-    case "listening":
-      return "En cours";
-    case "completed":
-      return "Terminés";
-    case "abandoned":
-      return "Abandonnés";
-    default:
-      return key;
-  }
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: t.bg, paddingHorizontal: 16, paddingTop: 12 },
+    search: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      height: 48,
+      paddingHorizontal: 14,
+      borderRadius: 16,
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    searchInput: { flex: 1, fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.text },
+    segment: { flexDirection: "row", gap: 4, padding: 4, borderRadius: 16, backgroundColor: t.card, marginTop: 12 },
+    segmentBtn: { flex: 1, minHeight: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    segmentBtnOn: { backgroundColor: t.cardAlt },
+    segmentText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    segmentTextOn: { fontFamily: t.fonts.bold, color: t.text },
+    chipsScroll: { flexGrow: 0, marginTop: 12 },
+    chips: { gap: 8, paddingRight: 16 },
+    chip: {
+      minHeight: 40,
+      paddingHorizontal: 14,
+      borderRadius: 20,
+      justifyContent: "center",
+      backgroundColor: t.card,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    chipOn: { backgroundColor: t.text, borderColor: t.text },
+    chipText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.textMuted },
+    chipTextOn: { color: t.bg },
+    listHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 14, marginBottom: 8 },
+    listCount: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
+    list: { flex: 1 },
+    empty: { textAlign: "center", marginTop: 40, fontFamily: t.fonts.regular, fontSize: t.fs(14), color: t.textMuted },
+    addBtn: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.accent,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+    },
+    addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+  });
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  heading: { fontSize: 22, fontWeight: "bold", marginBottom: 12 },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 12 },
-  filterBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-  },
-  filterBtnActive: { backgroundColor: "#12AAB8" },
-  filterText: { fontSize: 13, color: "#111827" },
-  filterTextActive: { color: "#fff", fontWeight: "600" },
-  sortBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 16,
-    backgroundColor: "#F3F4F6",
-  },
-  sortBtnActive: { backgroundColor: "#0EA5E9" },
-  sortText: { fontSize: 12, color: "#333" },
-  sortTextActive: { color: "#fff", fontWeight: "600" },
-  addBtn: {
-    backgroundColor: "#12AAB8",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 12,
-  },
-  addText: { color: "#fff", fontWeight: "600", fontSize: 16 },
-  empty: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 40 },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#111827", marginBottom: 6 },
-  emptySub: { fontSize: 13, color: "#6B7280" },
-});
-

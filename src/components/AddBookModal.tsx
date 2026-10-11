@@ -1,6 +1,29 @@
-// src/components/AddBookModal.tsx
-import React, { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { useTheme } from "../ThemeContext";
+import { Theme } from "../theme";
+
+type BookData = { title: string; author?: string; totalPages?: number; notes?: string };
+
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  onSubmit: (data: BookData) => void;
+  initial?: BookData;
+  heading?: string;
+  onDelete?: () => void;
+};
 
 export default function AddBookModal({
   visible,
@@ -8,25 +31,21 @@ export default function AddBookModal({
   onSubmit,
   initial,
   heading = "Ajouter un livre",
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (data: { title: string; author?: string; totalPages?: number; notes?: string }) => void;
-  initial?: { title: string; author?: string; totalPages?: number; notes?: string };
-  heading?: string;
-}) {
+  onDelete,
+}: Props) {
+  const t = useTheme();
+  const styles = useMemo(() => makeStyles(t), [t]);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [total, setTotal] = useState("");
   const [notes, setNotes] = useState("");
-  
+
   useEffect(() => {
-    if (visible) {
-      setTitle(initial?.title ?? "");
-      setAuthor(initial?.author ?? "");
-      setTotal(initial?.totalPages != null ? String(initial.totalPages) : "");
-      setNotes(initial?.notes ?? "");
-    }
+    if (!visible) return;
+    setTitle(initial?.title ?? "");
+    setAuthor(initial?.author ?? "");
+    setTotal(initial?.totalPages != null ? String(initial.totalPages) : "");
+    setNotes(initial?.notes ?? "");
   }, [visible, initial]);
 
   const valid = title.trim().length > 0;
@@ -40,67 +59,152 @@ export default function AddBookModal({
       totalPages: Number.isFinite(totalPages as number) ? totalPages : undefined,
       notes: notes.trim() || undefined,
     });
-    setTitle(""); setAuthor(""); setTotal(""); setNotes("");
+    onClose();
   }
+
+  function handleDelete() {
+    if (!onDelete) return;
+    const message = `Supprimer « ${initial?.title ?? "ce livre"} » ?`;
+    const doDelete = () => {
+      onDelete();
+      onClose();
+    };
+    if (Platform.OS === "web") {
+      if ((globalThis as any).confirm?.(message)) doDelete();
+      return;
+    }
+    Alert.alert("Supprimer", message, [
+      { text: "Annuler", style: "cancel" },
+      { text: "Supprimer", style: "destructive", onPress: doDelete },
+    ]);
+  }
+
+  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        style={styles.backdrop} 
+      <KeyboardAvoidingView
+        style={styles.backdrop}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.sheet}>
-          <Text style={styles.heading}>➕ Ajouter un livre</Text>
+            <View style={styles.handle} />
+            <Text style={styles.heading}>{heading}</Text>
 
-          <TextInput style={styles.input} placeholder="Titre *" value={title} onChangeText={setTitle} />
-          <TextInput style={styles.input} placeholder="Auteur (optionnel)" value={author} onChangeText={setAuthor} />
-          <TextInput
-            style={styles.input}
-            placeholder="Nombre de pages (optionnel)"
-            keyboardType="numeric"
-            value={total}
-            onChangeText={setTotal}
-          />
-          <TextInput
-            style={[styles.input, styles.notes]}
-            placeholder="Notes (optionnel)"
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={Platform.OS === "ios" ? 4 : 5}
-          />
+            <Text style={styles.label}>Titre *</Text>
+            <TextInput
+              style={styles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Ex. Le Problème à trois corps"
+              placeholderTextColor={t.textMuted}
+            />
 
-          <View style={styles.row}>
-            <Pressable style={[styles.btn, styles.btnGhost]} onPress={onClose}>
-              <Text style={[styles.btnText, { color: "#0E5A90" }]}>Annuler</Text>
-            </Pressable>
-            <Pressable style={[styles.btn, !valid && { opacity: 0.5 }]} disabled={!valid} onPress={handleSave}>
-              <Text style={styles.btnText}>Enregistrer</Text>
-            </Pressable>
+            <Text style={styles.label}>Auteur (optionnel)</Text>
+            <TextInput
+              style={styles.input}
+              value={author}
+              onChangeText={setAuthor}
+              placeholder="Ex. Liu Cixin"
+              placeholderTextColor={t.textMuted}
+            />
+
+            <Text style={styles.label}>Nombre de pages (optionnel)</Text>
+            <TextInput
+              style={styles.input}
+              value={total}
+              onChangeText={(v) => setTotal(v.replace(/\D/g, ""))}
+              keyboardType="number-pad"
+              placeholder="Ex. 464"
+              placeholderTextColor={t.textMuted}
+            />
+
+            <Text style={styles.label}>Notes (optionnel)</Text>
+            <TextInput
+              style={[styles.input, styles.textarea]}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Notes, citations…"
+              placeholderTextColor={t.textMuted}
+              multiline
+            />
+
+            <View style={styles.actions}>
+              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+                <Text style={styles.btnTextSecondary}>Annuler</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
+                disabled={!valid}
+                onPress={handleSave}
+                accessibilityRole="button"
+              >
+                <Text style={styles.btnTextPrimary}>Enregistrer</Text>
+              </Pressable>
+            </View>
+
+            {onDelete && (
+              <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.deleteBtn}>
+                <Text style={[styles.deleteText, { color: danger }]}>Supprimer</Text>
+              </Pressable>
+            )}
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
-  scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-  sheet: { backgroundColor: "#fff", padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16, gap: 8 },
-  heading: { fontFamily: "Poppins_700Bold", fontSize: 16, color: "#111827", marginBottom: 6 },
-  input: {
-    borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 10, fontFamily: "Poppins_400Regular",
-  },
-  notes: { textAlignVertical: "top" },
-  row: { flexDirection: "row", gap: 10, marginTop: 8, justifyContent: "flex-end" },
-  btn: { backgroundColor: "#12AAB8", paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10 },
-  btnGhost: { backgroundColor: "#E0F2FE" },
-  btnText: { color: "#fff", fontFamily: "Poppins_600SemiBold" },
-});
+function makeStyles(t: Theme) {
+  return StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
+    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
+    sheet: {
+      backgroundColor: t.card,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      borderWidth: 1,
+      borderColor: t.border,
+      padding: 20,
+      paddingTop: 10,
+    },
+    handle: {
+      alignSelf: "center",
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: t.border,
+      marginBottom: 14,
+    },
+    heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
+    label: {
+      fontFamily: t.fonts.semibold,
+      fontSize: t.fs(12),
+      color: t.textMuted,
+      marginTop: 12,
+      marginBottom: 6,
+    },
+    input: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: t.border,
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontFamily: t.fonts.regular,
+      fontSize: t.fs(15),
+      color: t.text,
+      backgroundColor: t.bg,
+    },
+    textarea: { minHeight: 100, textAlignVertical: "top" },
+    actions: { flexDirection: "row", gap: 10, marginTop: 20 },
+    btn: { flex: 1, minHeight: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
+    btnPrimary: { backgroundColor: t.accent },
+    btnSecondary: { backgroundColor: t.cardAlt },
+    btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+    btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
+    deleteBtn: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
+    deleteText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14) },
+  });
+}
