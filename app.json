@@ -4,7 +4,7 @@
     "slug": "Listana",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/Listana_Favicon_V1.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "listana",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -21,8 +21,8 @@
     "android": {
       "package": "com.listana.app",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF",
-        "foregroundImage": "./assets/images/Listana_Favicon_V1.png"
+        "backgroundColor": "#0E1733",
+        "foregroundImage": "./assets/images/android-icon-foreground.png"
       },
       "permissions": [],
       "edgeToEdgeEnabled": true,
@@ -30,7 +30,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/Listana_Favicon_V1.png",
+      "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
     },
     "plugins": [
@@ -41,9 +41,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
+          "backgroundColor": "#F4F5F8",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#0B0C10"
           }
         }
       ],
