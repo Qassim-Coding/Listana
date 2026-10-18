@@ -12,10 +12,16 @@ export type TVShow = {
   totalSeasons?: number;
   episodesPerSeason: number;
   currentEpisode: number;
+  // Nombre d'épisodes de chaque saison (index 0 = saison 1), fourni par TMDB
+  seasonEpisodes?: number[];
 
   // Historique simple (comme films/livres)
   history?: { episode: number; season: number; startedAt: string }[];
 
-  source?: string; // optionnel
+  // Lien TMDB
+  tmdbId?: number;
+  posterUrl?: string;
+
+  source?: string; // "manual" | "tmdb"
   updatedAt: number;
 };

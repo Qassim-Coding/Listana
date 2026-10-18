@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { TV_STATUS_LABEL } from "../hooks/useTVShows";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
@@ -47,9 +47,13 @@ export default function TVShowCard({ show, onEdit, onIncrementEpisode }: Props) 
       accessibilityLabel={`Modifier ${show.title}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
     >
-      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
-        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
-      </View>
+      {show.posterUrl ? (
+        <Image source={{ uri: show.posterUrl }} style={styles.cover} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={[styles.cover, styles.coverEmpty, { backgroundColor: color + "33" }]}>
+          <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
+        </View>
+      )}
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
@@ -101,7 +105,8 @@ function makeStyles(t: Theme) {
       borderWidth: 1,
       borderColor: t.border,
     },
-    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    cover: { width: 56, height: 80, borderRadius: 12, backgroundColor: t.cardAlt },
+    coverEmpty: { alignItems: "center", justifyContent: "center" },
     coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
     body: { flex: 1, minWidth: 0 },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },

@@ -82,10 +82,19 @@ export default function SettingsPage() {
         <Text style={styles.section}>Taille du texte</Text>
         <Segmented options={SIZES} value={settings.textSize} onChange={setTextSize} t={t} />
 
-        <View style={styles.preview}>
-          <Text style={styles.previewLabel}>Aperçu</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Aperçu</Text>
           <Text style={styles.previewTitle}>Frieren</Text>
           <Text style={styles.previewMeta}>Épisode 14 / 28</Text>
+        </View>
+
+        <Text style={styles.section}>À propos</Text>
+        <View style={styles.card}>
+          <Text style={styles.aboutTitle}>Listana</Text>
+          <Text style={styles.aboutText}>Données et affiches des films et séries fournies par TMDB.</Text>
+          <Text style={styles.aboutNotice}>
+            This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </Text>
         </View>
       </ScrollView>
     </>
@@ -96,23 +105,20 @@ function makeStyles(t: Theme) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.bg },
     content: { padding: 20, paddingBottom: 40 },
-    section: {
-      fontFamily: t.fonts.bold,
-      fontSize: t.fs(16),
-      color: t.text,
-      marginTop: 20,
-      marginBottom: 10,
-    },
-    preview: {
-      marginTop: 24,
+    section: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text, marginTop: 20, marginBottom: 10 },
+    card: {
+      marginTop: 12,
       padding: 16,
       borderRadius: t.radius.card,
       backgroundColor: t.card,
       borderWidth: 1,
       borderColor: t.border,
     },
-    previewLabel: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted },
+    cardLabel: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted },
     previewTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(18), color: t.text, marginTop: 6 },
     previewMeta: { fontFamily: t.fonts.regular, fontSize: t.fs(14), color: t.textMuted, marginTop: 2 },
+    aboutTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
+    aboutText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), lineHeight: t.fs(19), color: t.textMuted, marginTop: 6 },
+    aboutNotice: { fontFamily: t.fonts.regular, fontSize: t.fs(12), lineHeight: t.fs(18), color: t.textMuted, marginTop: 8, fontStyle: "italic" },
   });
 }

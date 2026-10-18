@@ -18,6 +18,11 @@ export const TV_STATUS_LABEL: Record<Status, string> = {
 
 export type NewTVShow = Partial<TVShow> & { title: string };
 
+// Épisodes de la saison donnée : valeur TMDB si connue, sinon la valeur saisie
+function episodesOf(s: TVShow, season: number): number {
+  return s.seasonEpisodes?.[season - 1] || s.episodesPerSeason || 0;
+}
+
 export function useTVShows() {
   const [shows, setShows] = useState<TVShow[]>([]);
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -53,7 +58,10 @@ export function useTVShows() {
       totalSeasons: show.totalSeasons,
       episodesPerSeason: show.episodesPerSeason ?? 0,
       currentEpisode,
+      seasonEpisodes: show.seasonEpisodes,
       history: [],
+      tmdbId: show.tmdbId,
+      posterUrl: show.posterUrl,
       source: show.source,
       updatedAt: Date.now(),
     };
@@ -74,15 +82,15 @@ export function useTVShows() {
     updateShow(id, { status: "done", finishedAt: new Date().toISOString() });
   }
 
-  // +1 épisode : passe à la saison suivante en fin de saison,
-  // et termine la série en fin de dernière saison (si le total est connu)
+  // +1 épisode : passe à la saison suivante en fin de saison (avec le bon nombre
+  // d'épisodes si TMDB le connaît), et termine la série en fin de dernière saison
   function incrementEpisode(id: string) {
     setShows((prev) =>
       prev.map((s): TVShow => {
         if (s.id !== id) return s;
         const now = new Date().toISOString();
-        const per = s.episodesPerSeason || 0;
         let season = s.currentSeason || 1;
+        let per = episodesOf(s, season);
         let episode = (s.currentEpisode ?? 0) + 1;
         let status: Status = s.status === "done" ? "done" : "watching";
         let finishedAt = s.finishedAt;
@@ -94,6 +102,7 @@ export function useTVShows() {
           } else {
             season += 1;
             episode = 1;
+            per = episodesOf(s, season);
           }
         }
 
@@ -106,6 +115,7 @@ export function useTVShows() {
           ...s,
           currentSeason: season,
           currentEpisode: episode,
+          episodesPerSeason: per || s.episodesPerSeason,
           status,
           finishedAt,
           startedAt: s.startedAt ?? now,

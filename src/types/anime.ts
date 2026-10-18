@@ -13,5 +13,9 @@ export type Anime = {
   totalEpisodes?: number;
   kind: AnimeKind;
   status: AnimeStatus;
+  // Lien TMDB
+  tmdbId?: number;
+  tmdbType?: "tv" | "movie";
+  posterUrl?: string;
   updatedAt: number;
 };

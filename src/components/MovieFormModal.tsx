@@ -1,20 +1,28 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
+import { SearchResult, getMovieDetails, hasTmdbToken, searchMovies } from "../api/tmdb";
 import { MOVIE_STATUS_LABEL } from "../hooks/useMovies";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Movie } from "../types/movie";
+import DateField from "./DateField";
+import MediaSearchField from "./MediaSearchField";
+
+type Status = Movie["status"];
 
 type Props = {
   visible: boolean;
@@ -24,7 +32,7 @@ type Props = {
   onDelete?: (movie: Movie) => void;
 };
 
-const STATUSES = ["planning", "watching", "done", "dropped"] as const;
+const STATUSES: Status[] = ["planning", "watching", "done", "dropped"];
 const digits = (v: string) => v.replace(/\D/g, "");
 
 function toIso(value: string): string | undefined {
@@ -37,12 +45,20 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [title, setTitle] = useState("");
-  const [status, setStatus] = useState<string>("planning");
+  const [status, setStatus] = useState<Status>("planning");
   const [runtime, setRuntime] = useState("");
   const [progress, setProgress] = useState("0");
   const [year, setYear] = useState("");
   const [startedAt, setStartedAt] = useState("");
+  const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
+  // Lien TMDB
+  const [tmdbId, setTmdbId] = useState<number | undefined>();
+  const [posterUrl, setPosterUrl] = useState<string | undefined>();
+  const [backdropUrl, setBackdropUrl] = useState<string | undefined>();
+  const [originalTitle, setOriginalTitle] = useState<string | undefined>();
+  const [imdbId, setImdbId] = useState<string | undefined>();
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -52,10 +68,47 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
     setProgress(String(initial?.progressMinutes ?? 0));
     setYear(initial?.year ? String(initial.year) : "");
     setStartedAt(initial?.startedAt ? String(initial.startedAt).slice(0, 10) : "");
+    setRating(initial?.rating ?? 0);
     setReview(initial?.review ?? "");
+    setTmdbId(initial?.tmdbId);
+    setPosterUrl(initial?.posterUrl);
+    setBackdropUrl(initial?.backdropUrl);
+    setOriginalTitle(initial?.originalTitle);
+    setImdbId(initial?.imdbId);
   }, [initial, visible]);
 
   const valid = title.trim().length > 0;
+
+  async function handlePick(r: SearchResult) {
+    setLinking(true);
+    try {
+      const d = await getMovieDetails(r.id);
+      setTitle(d.title);
+      setYear(d.year ? String(d.year) : "");
+      if (d.runtime) setRuntime(String(d.runtime));
+      setTmdbId(d.id);
+      setPosterUrl(d.posterUrl);
+      setBackdropUrl(d.backdropUrl);
+      setOriginalTitle(d.originalTitle);
+      setImdbId(d.imdbId);
+    } catch {
+      // Détails indisponibles : on garde au moins ce que la recherche a donné
+      setTitle(r.title);
+      setYear(r.year ? String(r.year) : "");
+      setTmdbId(r.id);
+      setPosterUrl(r.posterUrl);
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  function unlink() {
+    setTmdbId(undefined);
+    setPosterUrl(undefined);
+    setBackdropUrl(undefined);
+    setOriginalTitle(undefined);
+    setImdbId(undefined);
+  }
 
   function handleSave() {
     if (!valid) return;
@@ -67,8 +120,15 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
       year: year ? parseInt(year, 10) : undefined,
       startedAt: toIso(startedAt) ?? (initial ? initial.startedAt : new Date().toISOString()),
       finishedAt: status === "done" ? initial?.finishedAt ?? Date.now() : initial?.finishedAt,
+      rating: rating > 0 ? rating : undefined,
       review: review.trim(),
-    } as Partial<Movie>);
+      tmdbId,
+      posterUrl,
+      backdropUrl,
+      originalTitle,
+      imdbId,
+      source: tmdbId ? "tmdb" : "manual",
+    });
     onClose();
   }
 
@@ -91,6 +151,8 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
   }
 
   const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
+  const starColor = "#FFB020";
+  const color = t.media.movie;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -99,6 +161,45 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <Text style={styles.heading}>{initial ? "Modifier le film" : "Ajouter un film"}</Text>
+
+            {hasTmdbToken() && !tmdbId && (
+              <>
+                <Text style={styles.label}>{initial ? "Relier à TMDB" : "Rechercher un film"}</Text>
+                <MediaSearchField
+                  placeholder="Ex. Dune"
+                  search={searchMovies}
+                  onPick={handlePick}
+                  color={color}
+                  credit="Données et affiches : TMDB"
+                />
+              </>
+            )}
+
+            {linking && (
+              <View style={styles.linkingRow}>
+                <ActivityIndicator color={color} />
+                <Text style={styles.linkingText}>Récupération des infos…</Text>
+              </View>
+            )}
+
+            {tmdbId && !linking && (
+              <View style={[styles.linked, { borderColor: color + "66" }]}>
+                {posterUrl ? (
+                  <Image source={{ uri: posterUrl }} style={styles.linkedPoster} />
+                ) : (
+                  <View style={[styles.linkedPoster, { backgroundColor: color + "33" }]} />
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkedTitle} numberOfLines={2}>
+                    {title || "Sans titre"}
+                  </Text>
+                  <Text style={[styles.linkedMeta, { color }]}>Relié à TMDB{year ? ` · ${year}` : ""}</Text>
+                </View>
+                <Pressable onPress={unlink} accessibilityRole="button" accessibilityLabel="Retirer le lien TMDB" style={styles.unlinkBtn}>
+                  <Ionicons name="close" size={20} color={t.textMuted} />
+                </Pressable>
+              </View>
+            )}
 
             <Text style={styles.label}>Titre *</Text>
             <TextInput
@@ -152,7 +253,7 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
 
             <View style={styles.twoCols}>
               <View style={styles.col}>
-                <Text style={styles.label}>Année</Text>
+                <Text style={styles.label}>Année de sortie</Text>
                 <TextInput
                   value={year}
                   onChangeText={(v) => setYear(digits(v).slice(0, 4))}
@@ -162,16 +263,36 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
                   style={styles.input}
                 />
               </View>
-              <View style={styles.col}>
-                <Text style={styles.label}>Début</Text>
-                <TextInput
-                  value={startedAt}
-                  onChangeText={setStartedAt}
-                  placeholder="AAAA-MM-JJ"
-                  placeholderTextColor={t.textMuted}
-                  style={styles.input}
-                />
-              </View>
+              <View style={styles.col} />
+            </View>
+
+            <Text style={styles.label}>Début du visionnage</Text>
+            <DateField
+              value={startedAt}
+              onChange={setStartedAt}
+              color={color}
+              placeholder="Choisir une date"
+              accessibilityLabel="Début du visionnage"
+            />
+
+            <Text style={styles.label}>Ma note</Text>
+            <View style={styles.stars}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <Pressable
+                  key={n}
+                  onPress={() => setRating(rating === n ? 0 : n)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Note ${n} sur 5`}
+                  accessibilityState={{ selected: rating >= n }}
+                  style={styles.starBtn}
+                >
+                  <Ionicons
+                    name={rating >= n ? "star" : "star-outline"}
+                    size={28}
+                    color={rating >= n ? starColor : t.textMuted}
+                  />
+                </Pressable>
+              ))}
             </View>
 
             <Text style={styles.label}>Avis (optionnel)</Text>
@@ -239,6 +360,22 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 90, textAlignVertical: "top" },
+    linkingRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+    linkingText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    linked: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      backgroundColor: t.bg,
+    },
+    linkedPoster: { width: 48, height: 72, borderRadius: 10 },
+    linkedTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(15), color: t.text },
+    linkedMeta: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), marginTop: 2 },
+    unlinkBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     twoCols: { flexDirection: "row", gap: 10 },
     col: { flex: 1 },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -254,6 +391,8 @@ function makeStyles(t: Theme) {
     chipOn: { backgroundColor: t.text, borderColor: t.text },
     chipText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.textMuted },
     chipTextOn: { color: t.bg },
+    stars: { flexDirection: "row", gap: 2 },
+    starBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     actions: { flexDirection: "row", gap: 10, marginTop: 20 },
     btn: { flex: 1, minHeight: 52, borderRadius: 26, alignItems: "center", justifyContent: "center" },
     btnPrimary: { backgroundColor: t.accent },

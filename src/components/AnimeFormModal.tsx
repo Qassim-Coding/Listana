@@ -1,6 +1,9 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,10 +14,20 @@ import {
   TextInput,
   View,
 } from "react-native";
+import {
+  SearchResult,
+  getMovieDetails,
+  getTVDetails,
+  hasTmdbToken,
+  searchMovies,
+  searchTV,
+} from "../api/tmdb";
 import { ANIME_STATUS_LABEL, NewAnime } from "../hooks/useAnimes";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Anime, AnimeKind, AnimeStatus } from "../types/anime";
+import DateField from "./DateField";
+import MediaSearchField from "./MediaSearchField";
 
 type Props = {
   visible: boolean;
@@ -46,6 +59,11 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
   const [startedAt, setStartedAt] = useState("");
   const [endedAt, setEndedAt] = useState("");
   const [review, setReview] = useState("");
+  // Lien TMDB
+  const [tmdbId, setTmdbId] = useState<number | undefined>();
+  const [tmdbType, setTmdbType] = useState<"tv" | "movie" | undefined>();
+  const [posterUrl, setPosterUrl] = useState<string | undefined>();
+  const [linking, setLinking] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
@@ -58,9 +76,48 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
     setStartedAt(dateOnly(initial?.startedAt));
     setEndedAt(dateOnly(initial?.endedAt));
     setReview(initial?.review ?? "");
+    setTmdbId(initial?.tmdbId);
+    setTmdbType(initial?.tmdbType);
+    setPosterUrl(initial?.posterUrl);
   }, [initial, visible]);
 
   const valid = title.trim().length > 0;
+
+  async function handlePick(r: SearchResult) {
+    setLinking(true);
+    try {
+      if (kind === "film") {
+        const d = await getMovieDetails(r.id);
+        setTitle(d.title);
+        setYear(d.year ? String(d.year) : "");
+        setPosterUrl(d.posterUrl);
+        setTmdbType("movie");
+        if (!totalEpisodes) setTotalEpisodes("1");
+      } else {
+        const d = await getTVDetails(r.id);
+        setTitle(d.title);
+        setYear(d.year ? String(d.year) : "");
+        setPosterUrl(d.posterUrl);
+        setTmdbType("tv");
+        if (d.totalEpisodes) setTotalEpisodes(String(d.totalEpisodes));
+      }
+      setTmdbId(r.id);
+    } catch {
+      setTitle(r.title);
+      setYear(r.year ? String(r.year) : "");
+      setPosterUrl(r.posterUrl);
+      setTmdbId(r.id);
+      setTmdbType(kind === "film" ? "movie" : "tv");
+    } finally {
+      setLinking(false);
+    }
+  }
+
+  function unlink() {
+    setTmdbId(undefined);
+    setTmdbType(undefined);
+    setPosterUrl(undefined);
+  }
 
   function handleSave() {
     if (!valid) return;
@@ -77,6 +134,9 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
       startedAt: toIso(startedAt) ?? (isNew ? new Date().toISOString() : undefined),
       endedAt: ended,
       review: review.trim() || undefined,
+      tmdbId,
+      tmdbType,
+      posterUrl,
     });
     onClose();
   }
@@ -100,26 +160,15 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
   }
 
   const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
+  const color = t.media.anime;
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.sheet}>
             <View style={styles.handle} />
-            <Text style={styles.heading}>{initial ? "Modifier l'animé" : "Ajouter un animé"}</Text>
-
-            <Text style={styles.label}>Titre *</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. Frieren"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
+            <Text style={styles.heading}>{initial ? "Modifier l’animé" : "Ajouter un animé"}</Text>
 
             <Text style={styles.label}>Type</Text>
             <View style={styles.segment}>
@@ -141,6 +190,59 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
               })}
             </View>
 
+            {hasTmdbToken() && !tmdbId && (
+              <>
+                <Text style={styles.label}>
+                  {initial ? "Relier à TMDB" : kind === "film" ? "Rechercher un film d’animation" : "Rechercher un animé"}
+                </Text>
+                <MediaSearchField
+                  placeholder={kind === "film" ? "Ex. Your Name" : "Ex. Frieren"}
+                  search={kind === "film" ? searchMovies : searchTV}
+                  onPick={handlePick}
+                  color={color}
+                  credit="Données et affiches : TMDB"
+                />
+              </>
+            )}
+
+            {linking && (
+              <View style={styles.linkingRow}>
+                <ActivityIndicator color={color} />
+                <Text style={styles.linkingText}>Récupération des infos…</Text>
+              </View>
+            )}
+
+            {tmdbId && !linking && (
+              <View style={[styles.linked, { borderColor: color + "66" }]}>
+                {posterUrl ? (
+                  <Image source={{ uri: posterUrl }} style={styles.linkedPoster} />
+                ) : (
+                  <View style={[styles.linkedPoster, { backgroundColor: color + "33" }]} />
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkedTitle} numberOfLines={2}>
+                    {title || "Sans titre"}
+                  </Text>
+                  <Text style={[styles.linkedMeta, { color }]}>
+                    Relié à TMDB{year ? ` · ${year}` : ""}
+                    {tmdbType === "tv" && totalEpisodes ? ` · ${totalEpisodes} ép.` : ""}
+                  </Text>
+                </View>
+                <Pressable onPress={unlink} accessibilityRole="button" accessibilityLabel="Retirer le lien TMDB" style={styles.unlinkBtn}>
+                  <Ionicons name="close" size={20} color={t.textMuted} />
+                </Pressable>
+              </View>
+            )}
+
+            <Text style={styles.label}>Titre *</Text>
+            <TextInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Ex. Frieren"
+              placeholderTextColor={t.textMuted}
+              style={styles.input}
+            />
+
             <Text style={styles.label}>Statut</Text>
             <View style={styles.chips}>
               {STATUSES.map((s) => {
@@ -153,9 +255,7 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
                     accessibilityState={{ selected: on }}
                     style={[styles.chip, on && styles.chipOn]}
                   >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                      {ANIME_STATUS_LABEL[s]}
-                    </Text>
+                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{ANIME_STATUS_LABEL[s]}</Text>
                   </Pressable>
                 );
               })}
@@ -184,38 +284,26 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
               </View>
             </View>
 
-            <Text style={styles.label}>Année (optionnel)</Text>
-            <TextInput
-              value={year}
-              onChangeText={(v) => setYear(digits(v).slice(0, 4))}
-              keyboardType="number-pad"
-              placeholder="Ex. 2023"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
             <View style={styles.twoCols}>
               <View style={styles.col}>
-                <Text style={styles.label}>Début</Text>
+                <Text style={styles.label}>Année de sortie</Text>
                 <TextInput
-                  value={startedAt}
-                  onChangeText={setStartedAt}
-                  placeholder="AAAA-MM-JJ"
+                  value={year}
+                  onChangeText={(v) => setYear(digits(v).slice(0, 4))}
+                  keyboardType="number-pad"
+                  placeholder="Ex. 2023"
                   placeholderTextColor={t.textMuted}
                   style={styles.input}
                 />
               </View>
-              <View style={styles.col}>
-                <Text style={styles.label}>Fin</Text>
-                <TextInput
-                  value={endedAt}
-                  onChangeText={setEndedAt}
-                  placeholder="AAAA-MM-JJ"
-                  placeholderTextColor={t.textMuted}
-                  style={styles.input}
-                />
-              </View>
+              <View style={styles.col} />
             </View>
+
+            <Text style={styles.label}>Début</Text>
+            <DateField value={startedAt} onChange={setStartedAt} color={color} accessibilityLabel="Date de début" />
+
+            <Text style={styles.label}>Fin</Text>
+            <DateField value={endedAt} onChange={setEndedAt} color={color} accessibilityLabel="Date de fin" />
 
             <Text style={styles.label}>Avis (optionnel)</Text>
             <TextInput
@@ -266,22 +354,9 @@ function makeStyles(t: Theme) {
       padding: 20,
       paddingTop: 10,
     },
-    handle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.border,
-      marginBottom: 14,
-    },
+    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border, marginBottom: 14 },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
-    label: {
-      fontFamily: t.fonts.semibold,
-      fontSize: t.fs(12),
-      color: t.textMuted,
-      marginTop: 12,
-      marginBottom: 6,
-    },
+    label: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), color: t.textMuted, marginTop: 12, marginBottom: 6 },
     input: {
       minHeight: 48,
       borderWidth: 1,
@@ -295,6 +370,22 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 90, textAlignVertical: "top" },
+    linkingRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+    linkingText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
+    linked: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      backgroundColor: t.bg,
+    },
+    linkedPoster: { width: 48, height: 72, borderRadius: 10 },
+    linkedTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(15), color: t.text },
+    linkedMeta: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), marginTop: 2 },
+    unlinkBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     twoCols: { flexDirection: "row", gap: 10 },
     col: { flex: 1 },
     segment: { flexDirection: "row", gap: 4, padding: 4, borderRadius: 16, backgroundColor: t.bg },
