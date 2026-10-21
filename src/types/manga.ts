@@ -25,6 +25,13 @@ export interface Manga {
   notes?: string;
   lastChapter?: string;
 
+  // Lien MyAnimeList via Jikan (optionnel)
+  malId?: number;
+  coverUrl?: string;
+  totalVolumes?: number; // nombre de tomes publiés (absent si série en cours)
+  totalChapters?: number; // nombre de chapitres publiés (absent si série en cours)
+  source?: "manual" | "jikan";
+
   // Gestion du cycle de vie
   createdAt: number;
   updatedAt: number;

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MAL_URL } from "../api/jikan";
 import EditMangaModal from "../components/EditMangaModal";
 import MangaCard from "../components/MangaCard";
 import UpdateMangaProgressModal from "../components/UpdateMangaProgressModal";
@@ -71,6 +72,11 @@ export default function MangasScreen() {
         pagesRead: changes.pagesRead,
         notes: changes.notes,
         lastChapter: changes.lastChapter,
+        malId: changes.malId,
+        coverUrl: changes.coverUrl,
+        totalVolumes: changes.totalVolumes,
+        totalChapters: changes.totalChapters,
+        source: changes.source,
         createdAt: now,
         updatedAt: now,
         archived: false,
@@ -96,6 +102,7 @@ export default function MangasScreen() {
   }
 
   const active = mangas.filter((m) => !m.archived);
+  const usesMal = active.some((m) => !!m.malId);
   const count = (f: Filter) =>
     f === "all" ? active.length : active.filter((m) => m.status === f).length;
 
@@ -164,7 +171,19 @@ export default function MangasScreen() {
         data={sorted}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-        ListEmptyComponent={<Text style={styles.empty}>Aucun manga ici pour l'instant.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>Aucun manga ici pour l’instant.</Text>}
+        ListFooterComponent={
+          usesMal ? (
+            <Pressable
+              onPress={() => Linking.openURL(MAL_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Données des mangas fournies par MyAnimeList via Jikan, ouvrir myanimelist.net"
+              style={styles.credit}
+            >
+              <Text style={styles.creditText}>Données et couvertures : MyAnimeList via Jikan</Text>
+            </Pressable>
+          ) : null
+        }
         renderItem={({ item }) => (
           <MangaCard item={item} onSelect={handleEdit} onUpdateProgress={setProgressManga} />
         )}
@@ -266,5 +285,7 @@ function makeStyles(t: Theme) {
       gap: 8,
     },
     addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+    credit: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 4 },
+    creditText: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, textDecorationLine: "underline" },
   });
 }

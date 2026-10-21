@@ -1,6 +1,8 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,10 +13,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { MangaSearchResult, searchManga } from "../api/jikan";
 import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Manga, MangaStatus } from "../types/manga";
 import { MANGA_STATUS_LABEL } from "../utils/mangaProgress";
+import MediaSearchField from "./MediaSearchField";
 
 type Props = {
   visible: boolean;
@@ -45,6 +49,11 @@ export default function EditMangaModal({
   const [progressMode, setProgressMode] = useState<"volume" | "chapter">(
     initial?.progressMode ?? (initial?.volumeNumber ? "volume" : "chapter")
   );
+  // Lien MyAnimeList (via Jikan)
+  const [malId, setMalId] = useState<number | undefined>(initial?.malId);
+  const [coverUrl, setCoverUrl] = useState<string | undefined>(initial?.coverUrl);
+  const [totalVolumes, setTotalVolumes] = useState<number | undefined>(initial?.totalVolumes);
+  const [totalChapters, setTotalChapters] = useState<number | undefined>(initial?.totalChapters);
 
   useEffect(() => {
     setTitle(initial?.title ?? "");
@@ -53,7 +62,27 @@ export default function EditMangaModal({
     setLastChapter(initial?.lastChapter ?? "");
     setNotes(initial?.notes ?? "");
     setProgressMode(initial?.progressMode ?? (initial?.volumeNumber ? "volume" : "chapter"));
+    setMalId(initial?.malId);
+    setCoverUrl(initial?.coverUrl);
+    setTotalVolumes(initial?.totalVolumes);
+    setTotalChapters(initial?.totalChapters);
   }, [initial, visible]);
+
+  function handlePick(r: MangaSearchResult) {
+    setTitle(r.title);
+    if (r.author) setSeries(r.author);
+    setMalId(r.id);
+    setCoverUrl(r.posterUrl);
+    setTotalVolumes(r.volumes);
+    setTotalChapters(r.chapters);
+  }
+
+  function unlink() {
+    setMalId(undefined);
+    setCoverUrl(undefined);
+    setTotalVolumes(undefined);
+    setTotalChapters(undefined);
+  }
 
   const wordCount = useMemo(() => {
     const txt = (notes || "").trim();
@@ -68,6 +97,11 @@ export default function EditMangaModal({
       lastChapter: lastChapter.trim() || undefined,
       notes: notes.trim() || undefined,
       progressMode,
+      malId,
+      coverUrl,
+      totalVolumes,
+      totalChapters,
+      source: malId ? "jikan" : "manual",
     });
     onClose();
   }
@@ -97,6 +131,13 @@ export default function EditMangaModal({
   }
 
   const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
+  const color = t.media.manga;
+  const totals = [
+    totalVolumes ? `${totalVolumes} tome${totalVolumes > 1 ? "s" : ""}` : "",
+    totalChapters ? `${totalChapters} chap.` : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -108,6 +149,45 @@ export default function EditMangaModal({
           <View style={styles.sheet}>
             <View style={styles.handle} />
             <Text style={styles.title}>{initial ? "Modifier le manga" : "Nouveau manga"}</Text>
+
+            {!malId && (
+              <>
+                <Text style={styles.label}>{initial ? "Relier à MyAnimeList" : "Rechercher un manga"}</Text>
+                <MediaSearchField
+                  placeholder="Ex. Vagabond"
+                  search={searchManga}
+                  onPick={handlePick}
+                  color={color}
+                  credit="Données et couvertures : MyAnimeList via Jikan"
+                />
+              </>
+            )}
+
+            {!!malId && (
+              <View style={[styles.linked, { borderColor: color + "66" }]}>
+                {coverUrl ? (
+                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+                ) : (
+                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkedTitle} numberOfLines={2}>
+                    {title || "Sans titre"}
+                  </Text>
+                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
+                    Relié à MyAnimeList{totals ? ` · ${totals}` : ""}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={unlink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retirer le lien MyAnimeList"
+                  style={styles.unlinkBtn}
+                >
+                  <Ionicons name="close" size={20} color={t.textMuted} />
+                </Pressable>
+              </View>
+            )}
 
             <Text style={styles.label}>Titre</Text>
             <TextInput
@@ -259,6 +339,20 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 110, textAlignVertical: "top" },
+    linked: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      backgroundColor: t.bg,
+    },
+    linkedCover: { width: 48, height: 72, borderRadius: 10 },
+    linkedTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(15), color: t.text },
+    linkedMeta: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), marginTop: 2 },
+    unlinkBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     wordCount: { fontFamily: t.fonts.regular, fontSize: t.fs(11), color: t.textMuted, marginTop: 4 },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     chip: {

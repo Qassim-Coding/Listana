@@ -44,13 +44,15 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |-- api/
 |   |   |-- tmdb.ts                     # Recherche et détails films / séries / animés (TMDB)
 |   |   |-- openLibrary.ts              # Recherche de livres et couvertures (sans clé)
+|   |   |-- rawg.ts                     # Recherche de jeux (RAWG)
+|   |   |-- jikan.ts                    # Recherche de mangas (Jikan / MyAnimeList)
 |   |-- components/
 |   |   |-- MediaCard.tsx               # Tuile de catégorie (icône + couleur)
 |   |   |-- MediaGrid.tsx               # Grille des catégories
 |   |   |-- ResumeSection.tsx           # Section « Reprendre » de l'accueil
 |   |   |-- WebBackButton.tsx           # En-tête retour sur le web
 |   |   |-- DateField.tsx               # Sélecteur de date (calendrier, format AAAA-MM-JJ)
-|   |   |-- MediaSearchField.tsx        # Champ de recherche (TMDB, Open Library, RAWG)
+|   |   |-- MediaSearchField.tsx        # Champ de recherche (TMDB, Open Library, RAWG, Jikan)
 |   |   |-- ProgressUpdateModal.tsx     # Mise à jour de progression générique (films)
 |   |   |-- AnimeCard.tsx
 |   |   |-- AnimeFormModal.tsx          # Ajout et modification d'un animé (recherche TMDB)
@@ -62,7 +64,7 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- AddBookModal.tsx            # Ajout et modification d'un livre (recherche Open Library)
 |   |   |-- UpdateBookPageModal.tsx     # Mise à jour de la page atteinte
 |   |   |-- MangaCard.tsx
-|   |   |-- EditMangaModal.tsx          # Ajout et modification d'un manga
+|   |   |-- EditMangaModal.tsx          # Ajout et modification d'un manga (recherche Jikan)
 |   |   |-- UpdateMangaProgressModal.tsx # Mise à jour tome / chapitre
 |   |   |-- GameCard.tsx
 |   |   |-- GameFormModal.tsx           # Ajout et modification d'un jeu (recherche RAWG)
@@ -123,7 +125,9 @@ Les jetons optionnels sont lus dans `.env.local` (ignoré par Git). Sans jeton, 
 
 **Open Library** (`src/api/openLibrary.ts`) — livres, sans clé. Le formulaire remplit titre, auteur, année, nombre de pages et couverture. Les éléments créés portent `source: "openlibrary"` et `olKey`.
 
-**RAWG** — jeux vidéo, clé `EXPO_PUBLIC_RAWG_KEY`. Recherche de titres et jaquettes. Mentionnée dans Paramètres → À propos.
+**RAWG** (`src/api/rawg.ts`, clé `EXPO_PUBLIC_RAWG_KEY`) — jeux vidéo. Recherche de titres et jaquettes.
+
+**Jikan** (`src/api/jikan.ts`) — mangas, sans clé. Proxy MyAnimeList, délai 8 s, un nouvel essai, cache. Les éléments créés portent `source: "jikan"` et `malId`.
 
 Le workflow `deploy-web.yml` ne transmet ni `EXPO_PUBLIC_TMDB_TOKEN` ni `EXPO_PUBLIC_RAWG_KEY` : la démo GitHub Pages n'a pas ces recherches tant que ces secrets n'y sont pas ajoutés.
 

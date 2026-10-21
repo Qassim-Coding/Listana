@@ -32,7 +32,7 @@ Listana regroupe au même endroit ce que vous regardez, lisez, jouez et écoutez
 - **Séries TV** : saisons et épisodes, +1 épisode avec passage automatique à la saison suivante, prochain épisode affiché. Recherche TMDB avec import du nombre de saisons et d'épisodes.
 - **Films** : durée, minutes vues, note sur 5 étoiles, avis. Recherche TMDB avec affiche et durée.
 - **Livres** : auteur, pages optionnelles, statut calculé à partir de la page atteinte, notes. Recherche Open Library (couverture, auteur, pages).
-- **Mangas** : suivi au tome ou au chapitre/scan, mise à jour par saisie directe ou +1 / +5 / +10.
+- **Mangas** : suivi au tome ou au chapitre/scan, mise à jour par saisie directe ou +1 / +5 / +10. Recherche Jikan / MyAnimeList (couverture, auteur, tomes).
 - **Jeux vidéo** : plateforme, genre, « où j'en suis », bouton commencer puis terminer. Recherche RAWG (titre, jaquette).
 - **Podcasts et livres audio** : filtre par type, +1 épisode ou chapitre.
 - **Bloc-notes** : trois types de notes. Note libre, liste à cocher, ou note liée à une œuvre de votre bibliothèque avec des repères (« p. 134 », « Ép. 14 »). Éditeur plein écran, nombre de mots, tri par modification ou création.
@@ -45,7 +45,7 @@ Tout reste sur l'appareil. Aucun compte n'est requis.
 
 `src/hooks/useStorage.ts` utilise MMKV quand le module natif est disponible (build de développement ou EAS), et AsyncStorage sinon (Expo Go, web). Tous les médias et les paramètres sont conservés après un redémarrage.
 
-Les seuls appels réseau sont les recherches TMDB, Open Library et RAWG. Elles envoient uniquement le texte tapé dans le champ de recherche ; rien de votre bibliothèque ne quitte l'appareil.
+Les seuls appels réseau sont les recherches TMDB, Open Library, RAWG et Jikan. Elles envoient uniquement le texte tapé dans le champ de recherche ; rien de votre bibliothèque ne quitte l'appareil.
 
 Le détail des clés est dans [docs/ARBORESCENCE.md](docs/ARBORESCENCE.md). Le texte affiché dans l'app est dans [docs/privacy.md](docs/privacy.md).
 
@@ -68,7 +68,7 @@ EXPO_PUBLIC_RAWG_KEY=votre_cle_rawg
 - TMDB : jeton d'accès en lecture sur [themoviedb.org](https://www.themoviedb.org/settings/api).
 - RAWG : clé API sur [rawg.io/apidocs](https://rawg.io/apidocs).
 
-Open Library n'a pas besoin de clé. Sans `.env.local`, l'app fonctionne normalement ; les champs TMDB et RAWG sont simplement masqués. `.env.local` est ignoré par Git. Redémarrez `expo start` après l'avoir créé ou modifié.
+Open Library et Jikan n'ont pas besoin de clé. Sans `.env.local`, l'app fonctionne normalement ; les champs TMDB et RAWG sont simplement masqués. `.env.local` est ignoré par Git. Redémarrez `expo start` après l'avoir créé ou modifié.
 
 Comme toute variable `EXPO_PUBLIC_*`, ces clés sont intégrées au bundle livré aux utilisateurs. C'est acceptable pour des clés en lecture seule, pas pour un vrai secret.
 
@@ -116,6 +116,7 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 - Recherche TMDB dans les formulaires Films, Séries et Animés.
 - Recherche Open Library dans le formulaire Livres.
 - Recherche RAWG dans le formulaire Jeux.
+- Recherche Jikan / MyAnimeList dans le formulaire Mangas.
 - Sélecteur de date avec calendrier pour les dates de début et de fin.
 - Notes à cocher et notes liées à une œuvre, avec repères de progression.
 
@@ -131,7 +132,7 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 
 ## Ensuite
 
-- Autres API pour remplir les fiches : AniList (animés, mangas), iTunes (podcasts).
+- Autres API pour remplir les fiches : iTunes (podcasts).
 - Balayer une carte pour la marquer terminée, retour haptique, compteurs sur l'accueil.
 - Widgets d'écran d'accueil (Android d'abord).
 

@@ -24,6 +24,7 @@ const SOURCES: { label: string; detail: string; url: string }[] = [
   { label: "TMDB", detail: "Films, séries et animés", url: "https://www.themoviedb.org" },
   { label: "Open Library", detail: "Livres", url: "https://openlibrary.org" },
   { label: "RAWG", detail: "Jeux vidéo", url: "https://rawg.io" },
+  { label: "MyAnimeList (via Jikan)", detail: "Mangas", url: "https://myanimelist.net" },
 ];
 
 function Segmented<K extends string>({
@@ -116,9 +117,6 @@ export default function SettingsPage() {
           ))}
           <Text style={styles.aboutNotice}>
             This product uses the TMDB API but is not endorsed or certified by TMDB.
-          </Text>
-          <Text style={styles.aboutNotice}>
-            This product uses the RAWG API but is not endorsed or certified by RAWG.
           </Text>
         </View>
       </ScrollView>

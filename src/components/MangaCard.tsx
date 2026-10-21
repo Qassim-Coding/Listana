@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { Manga } from "../types/manga";
@@ -18,6 +18,8 @@ export default function MangaCard({ item, onSelect, onUpdateProgress }: Props) {
   const color = t.media.manga;
   const title = item.title || "Sans titre";
   const initial = title.trim().charAt(0).toUpperCase();
+  const totals = item.totalVolumes ? `${item.totalVolumes} tome${item.totalVolumes > 1 ? "s" : ""}` : "";
+  const statusLine = [item.status ? MANGA_STATUS_LABEL[item.status] : "", totals].filter(Boolean).join(" · ");
 
   return (
     <Pressable
@@ -26,9 +28,13 @@ export default function MangaCard({ item, onSelect, onUpdateProgress }: Props) {
       accessibilityLabel={`Modifier ${title}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
     >
-      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
-        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
-      </View>
+      {item.coverUrl ? (
+        <Image source={{ uri: item.coverUrl }} style={styles.cover} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={[styles.cover, styles.coverEmpty, { backgroundColor: color + "33" }]}>
+          <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
+        </View>
+      )}
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
@@ -40,9 +46,7 @@ export default function MangaCard({ item, onSelect, onUpdateProgress }: Props) {
         <Text style={[styles.lastRead, { color }]} numberOfLines={1}>
           {formatLastRead(item)}
         </Text>
-        <Text style={styles.status}>
-          {item.status ? MANGA_STATUS_LABEL[item.status] : ""}
-        </Text>
+        <Text style={styles.status}>{statusLine}</Text>
       </View>
 
       <Pressable
@@ -71,13 +75,8 @@ function makeStyles(t: Theme) {
       borderWidth: 1,
       borderColor: t.border,
     },
-    cover: {
-      width: 56,
-      height: 80,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
+    cover: { width: 56, height: 80, borderRadius: 12, backgroundColor: t.cardAlt },
+    coverEmpty: { alignItems: "center", justifyContent: "center" },
     coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
     body: { flex: 1, minWidth: 0 },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },

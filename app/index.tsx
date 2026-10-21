@@ -83,6 +83,7 @@ export default function Home() {
         <Text onPress={() => router.push("/privacy")} style={styles.linkText}>
           Confidentialité
         </Text>
+        <Text style={styles.version}>Listana V2.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,6 +126,13 @@ function makeStyles(t: Theme) {
       fontFamily: t.fonts.regular,
       // @ts-ignore - web-only
       cursor: isWeb ? "pointer" : undefined,
+    },
+    version: {
+      marginTop: 8,
+      fontSize: t.fs(12),
+      color: t.textMuted,
+      textAlign: "center",
+      fontFamily: t.fonts.regular,
     },
   });
 }
