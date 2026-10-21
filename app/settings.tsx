@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import React, { useMemo } from "react";
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
 import { TextSize, Theme, ThemeMode, makeHeaderOptions } from "../src/theme";
 import { useSettings } from "../src/ThemeContext";
@@ -17,6 +17,13 @@ const SIZES: { key: TextSize; label: string }[] = [
   { key: "normal", label: "Normal" },
   { key: "large", label: "Grand" },
   { key: "xlarge", label: "Très grand" },
+];
+
+// Sources de données (liens exigés ou recommandés par chaque service)
+const SOURCES: { label: string; detail: string; url: string }[] = [
+  { label: "TMDB", detail: "Films, séries et animés", url: "https://www.themoviedb.org" },
+  { label: "Open Library", detail: "Livres", url: "https://openlibrary.org" },
+  { label: "RAWG", detail: "Jeux vidéo", url: "https://rawg.io" },
 ];
 
 function Segmented<K extends string>({
@@ -91,9 +98,27 @@ export default function SettingsPage() {
         <Text style={styles.section}>À propos</Text>
         <View style={styles.card}>
           <Text style={styles.aboutTitle}>Listana</Text>
-          <Text style={styles.aboutText}>Données et affiches des films et séries fournies par TMDB.</Text>
+          <Text style={styles.aboutText}>Les informations et les images des œuvres viennent de ces services :</Text>
+          {SOURCES.map((s) => (
+            <Pressable
+              key={s.label}
+              onPress={() => Linking.openURL(s.url)}
+              accessibilityRole="link"
+              accessibilityLabel={`${s.label}, ${s.detail}, ouvrir le site`}
+              style={styles.sourceRow}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sourceLabel}>{s.label}</Text>
+                <Text style={styles.sourceDetail}>{s.detail}</Text>
+              </View>
+              <Text style={styles.sourceLink}>{s.url.replace("https://", "").replace("www.", "")}</Text>
+            </Pressable>
+          ))}
           <Text style={styles.aboutNotice}>
             This product uses the TMDB API but is not endorsed or certified by TMDB.
+          </Text>
+          <Text style={styles.aboutNotice}>
+            This product uses the RAWG API but is not endorsed or certified by RAWG.
           </Text>
         </View>
       </ScrollView>
@@ -118,7 +143,18 @@ function makeStyles(t: Theme) {
     previewTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(18), color: t.text, marginTop: 6 },
     previewMeta: { fontFamily: t.fonts.regular, fontSize: t.fs(14), color: t.textMuted, marginTop: 2 },
     aboutTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },
-    aboutText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), lineHeight: t.fs(19), color: t.textMuted, marginTop: 6 },
+    aboutText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), lineHeight: t.fs(19), color: t.textMuted, marginTop: 6, marginBottom: 4 },
+    sourceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+      minHeight: 52,
+      borderTopWidth: 1,
+      borderTopColor: t.border,
+    },
+    sourceLabel: { fontFamily: t.fonts.semibold, fontSize: t.fs(14), color: t.text },
+    sourceDetail: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted },
+    sourceLink: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, textDecorationLine: "underline" },
     aboutNotice: { fontFamily: t.fonts.regular, fontSize: t.fs(12), lineHeight: t.fs(18), color: t.textMuted, marginTop: 8, fontStyle: "italic" },
   });
 }

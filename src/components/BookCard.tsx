@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { Book, BookStatus } from "../types/book";
@@ -43,16 +43,21 @@ export default function BookCard({ book, onEdit, onUpdatePage }: Props) {
       accessibilityLabel={`Modifier ${book.title}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
     >
-      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
-        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
-      </View>
+      {book.coverUrl ? (
+        <Image source={{ uri: book.coverUrl }} style={styles.cover} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={[styles.cover, styles.coverEmpty, { backgroundColor: color + "33" }]}>
+          <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
+        </View>
+      )}
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
           {book.title}
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
-          {book.author || "Auteur inconnu"} · {BOOK_STATUS_LABEL[book.status] ?? ""}
+          {book.author || "Auteur inconnu"}
+          {book.year ? ` · ${book.year}` : ""} · {BOOK_STATUS_LABEL[book.status] ?? ""}
         </Text>
         <View style={styles.progressRow}>
           <Text style={[styles.progress, { color }]} numberOfLines={1}>
@@ -104,7 +109,8 @@ function makeStyles(t: Theme) {
       borderWidth: 1,
       borderColor: t.border,
     },
-    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    cover: { width: 56, height: 80, borderRadius: 12, backgroundColor: t.cardAlt },
+    coverEmpty: { alignItems: "center", justifyContent: "center" },
     coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
     body: { flex: 1, minWidth: 0 },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },

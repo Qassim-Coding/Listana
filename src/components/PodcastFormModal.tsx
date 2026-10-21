@@ -114,7 +114,7 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
               style={styles.input}
               value={title}
               onChangeText={setTitle}
-              placeholder="Ex. Les Couilles sur la table"
+              placeholder="Ex. 10'000 pas"
               placeholderTextColor={t.textMuted}
             />
 
@@ -123,7 +123,7 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
               style={styles.input}
               value={host}
               onChangeText={setHost}
-              placeholder="Optionnel"
+              placeholder={kind === "audiobook" ? "Optionnel" : "Ex. Le Raptor"}
               placeholderTextColor={t.textMuted}
             />
 

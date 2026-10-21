@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Book, BookStatus } from "../types/book";
+import { Book, BookInput, BookStatus } from "../types/book";
 import { loadJSON, saveJSON } from "./useStorage";
 
 const STORAGE_KEY = "listana.books.v1";
@@ -39,12 +39,7 @@ export function useBooks() {
     if (!loading) saveJSON(STORAGE_KEY, books);
   }, [books, loading]);
 
-  function addBook(input: {
-    title: string;
-    author?: string;
-    totalPages?: number;
-    notes?: string;
-  }) {
+  function addBook(input: BookInput) {
     const now = Date.now();
     const draft: Book = {
       id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
@@ -55,6 +50,10 @@ export function useBooks() {
       notes: input.notes?.trim() || undefined,
       status: "planning",
       updatedAt: now,
+      coverUrl: input.coverUrl || undefined,
+      olKey: input.olKey || undefined,
+      year: input.year || undefined,
+      source: input.olKey ? "openlibrary" : "manual",
     };
     setBooks((prev) => [draft, ...prev]);
   }
@@ -95,10 +94,7 @@ export function useBooks() {
     );
   }
 
-  function updateBook(
-    id: string,
-    changes: Partial<Pick<Book, "title" | "author" | "totalPages" | "notes">>
-  ) {
+  function updateBook(id: string, changes: Partial<BookInput>) {
     setBooks((prev) =>
       prev.map((b) => {
         if (b.id !== id) return b;
@@ -115,6 +111,14 @@ export function useBooks() {
           notes: changes.notes !== undefined ? (changes.notes?.trim() || undefined) : b.notes,
           updatedAt: now,
         };
+
+        // Lien Open Library : présent dans "changes" = on remplace (undefined = lien retiré)
+        if ("olKey" in changes) {
+          next.olKey = changes.olKey || undefined;
+          next.coverUrl = changes.coverUrl || undefined;
+          next.year = changes.year || undefined;
+          next.source = next.olKey ? "openlibrary" : "manual";
+        }
 
         // Clamp currentPage if totalPages decreased
         if (next.totalPages != null && next.currentPage != null) {
@@ -179,7 +183,7 @@ export function useBooks() {
     });
     return sorted;
   }, [books, filter, sort]);
-  
+
   return {
     books,
     visibleBooks,

@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { Game } from "../types/game";
@@ -33,8 +33,9 @@ export default function GameCard({ game, onEdit, onQuickAction }: Props) {
   const initial = game.title.trim().charAt(0).toUpperCase();
   const completed = game.status === "completed";
   const playing = game.status === "playing";
+  const year = game.releaseDate ? game.releaseDate.slice(0, 4) : "";
 
-  const meta = [game.platform, GAME_GENRE_LABEL[game.genre] ?? game.genre, GAME_STATUS_LABEL[game.status]]
+  const meta = [game.platform, GAME_GENRE_LABEL[game.genre] ?? game.genre, year, GAME_STATUS_LABEL[game.status]]
     .filter(Boolean)
     .join(" · ");
 
@@ -50,9 +51,13 @@ export default function GameCard({ game, onEdit, onQuickAction }: Props) {
       accessibilityLabel={`Modifier ${game.title}`}
       style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
     >
-      <View style={[styles.cover, { backgroundColor: color + "33" }]}>
-        <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
-      </View>
+      {game.coverUrl ? (
+        <Image source={{ uri: game.coverUrl }} style={styles.cover} accessibilityIgnoresInvertColors />
+      ) : (
+        <View style={[styles.cover, styles.coverEmpty, { backgroundColor: color + "33" }]}>
+          <Text style={[styles.coverLetter, { color }]}>{initial}</Text>
+        </View>
+      )}
 
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
@@ -103,7 +108,8 @@ function makeStyles(t: Theme) {
       borderWidth: 1,
       borderColor: t.border,
     },
-    cover: { width: 56, height: 80, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+    cover: { width: 56, height: 80, borderRadius: 12, backgroundColor: t.cardAlt },
+    coverEmpty: { alignItems: "center", justifyContent: "center" },
     coverLetter: { fontFamily: t.fonts.bold, fontSize: t.fs(24) },
     body: { flex: 1, minWidth: 0 },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.text },

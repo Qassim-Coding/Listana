@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { RAWG_URL } from "../api/rawg";
 import GameCard, { GAME_STATUS_LABEL } from "../components/GameCard";
 import GameFormModal from "../components/GameFormModal";
 import { addGame, deleteGame, getGames, initGames, updateGame } from "../storage/game.store";
@@ -70,6 +71,8 @@ export default function GamesScreen() {
     refresh();
   }
 
+  const usesRawg = games.some((g) => !!g.rawgId);
+
   const count = (f: Filter) => (f === "all" ? games.length : games.filter((g) => g.status === f).length);
   const q = query.trim().toLowerCase();
 
@@ -130,7 +133,19 @@ export default function GamesScreen() {
         data={shown}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
-        ListEmptyComponent={<Text style={styles.empty}>Aucun jeu ici pour l'instant.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>Aucun jeu ici pour l’instant.</Text>}
+        ListFooterComponent={
+          usesRawg ? (
+            <Pressable
+              onPress={() => Linking.openURL(RAWG_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Données des jeux fournies par RAWG, ouvrir rawg.io"
+              style={styles.credit}
+            >
+              <Text style={styles.creditText}>Données et images des jeux : RAWG.io</Text>
+            </Pressable>
+          ) : null
+        }
         renderItem={({ item }) => (
           <GameCard game={item} onEdit={handleEdit} onQuickAction={handleQuickAction} />
         )}
@@ -186,6 +201,8 @@ function makeStyles(t: Theme) {
     sortText: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), color: t.text },
     list: { flex: 1 },
     empty: { textAlign: "center", marginTop: 40, fontFamily: t.fonts.regular, fontSize: t.fs(14), color: t.textMuted },
+    credit: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 4 },
+    creditText: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, textDecorationLine: "underline" },
     addBtn: {
       position: "absolute",
       left: 16,

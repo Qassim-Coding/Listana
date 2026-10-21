@@ -1,20 +1,25 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { useTheme } from "../ThemeContext";
+import { GameSearchResult, hasRawgKey, mapGenre, mapPlatform, searchGames } from "../api/rawg";
 import { Theme } from "../theme";
 import { Game } from "../types/game";
+import DateField from "./DateField";
 import { GAME_GENRE_LABEL, GAME_STATUS_LABEL } from "./GameCard";
+import MediaSearchField from "./MediaSearchField";
 
 type Props = {
   visible: boolean;
@@ -38,6 +43,9 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
   const [lastCheckpoint, setLastCheckpoint] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [notes, setNotes] = useState("");
+  // Lien RAWG
+  const [rawgId, setRawgId] = useState<number | undefined>();
+  const [coverUrl, setCoverUrl] = useState<string | undefined>();
 
   // Repart toujours de "initial" (ou de valeurs vides pour un nouvel ajout)
   useEffect(() => {
@@ -49,9 +57,27 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
     setLastCheckpoint(initial?.lastCheckpoint ?? "");
     setReleaseDate(initial?.releaseDate ?? "");
     setNotes(initial?.notes ?? "");
+    setRawgId(initial?.rawgId);
+    setCoverUrl(initial?.coverUrl);
   }, [initial, visible]);
 
   const valid = title.trim().length > 0;
+
+  function handlePick(r: GameSearchResult) {
+    setTitle(r.title);
+    if (r.released) setReleaseDate(r.released);
+    const p = mapPlatform(r.platforms);
+    if (p) setPlatform(p);
+    const g = mapGenre(r.genres);
+    if (g) setGenre(g);
+    setRawgId(r.id);
+    setCoverUrl(r.posterUrl);
+  }
+
+  function unlink() {
+    setRawgId(undefined);
+    setCoverUrl(undefined);
+  }
 
   function handleSave() {
     if (!valid) return;
@@ -63,6 +89,9 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
       lastCheckpoint: lastCheckpoint.trim() || undefined,
       releaseDate: releaseDate.trim() || undefined,
       notes: notes.trim() || undefined,
+      rawgId,
+      coverUrl,
+      source: rawgId ? "rawg" : "manual",
     });
     onClose();
   }
@@ -86,6 +115,7 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
   }
 
   const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
+  const color = t.media.game;
 
   function Chips<V extends string>({
     values,
@@ -126,6 +156,45 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
             <View style={styles.handle} />
             <Text style={styles.heading}>{initial ? "Modifier le jeu" : "Ajouter un jeu"}</Text>
 
+            {hasRawgKey() && !rawgId && (
+              <>
+                <Text style={styles.label}>{initial ? "Relier à RAWG" : "Rechercher un jeu"}</Text>
+                <MediaSearchField
+                  placeholder="Ex. Hollow Knight"
+                  search={searchGames}
+                  onPick={handlePick}
+                  color={color}
+                  credit="Données et images : RAWG"
+                />
+              </>
+            )}
+
+            {!!rawgId && (
+              <View style={[styles.linked, { borderColor: color + "66" }]}>
+                {coverUrl ? (
+                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+                ) : (
+                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkedTitle} numberOfLines={2}>
+                    {title || "Sans titre"}
+                  </Text>
+                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
+                    Relié à RAWG{releaseDate ? ` · ${releaseDate.slice(0, 4)}` : ""}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={unlink}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retirer le lien RAWG"
+                  style={styles.unlinkBtn}
+                >
+                  <Ionicons name="close" size={20} color={t.textMuted} />
+                </Pressable>
+              </View>
+            )}
+
             <Text style={styles.label}>Titre *</Text>
             <TextInput
               value={title}
@@ -144,7 +213,7 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
             <Text style={styles.label}>Genre</Text>
             <Chips values={GENRES} value={genre} onChange={setGenre} label={(v) => GAME_GENRE_LABEL[v] ?? v} />
 
-            <Text style={styles.label}>Où j'en suis (optionnel)</Text>
+            <Text style={styles.label}>Où j’en suis (optionnel)</Text>
             <TextInput
               value={lastCheckpoint}
               onChangeText={setLastCheckpoint}
@@ -154,12 +223,11 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
             />
 
             <Text style={styles.label}>Date de sortie (optionnel)</Text>
-            <TextInput
+            <DateField
               value={releaseDate}
-              onChangeText={setReleaseDate}
-              placeholder="AAAA-MM-JJ"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
+              onChange={setReleaseDate}
+              color={color}
+              accessibilityLabel="Date de sortie"
             />
 
             <Text style={styles.label}>Notes (optionnel)</Text>
@@ -227,6 +295,20 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 90, textAlignVertical: "top" },
+    linked: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      backgroundColor: t.bg,
+    },
+    linkedCover: { width: 72, height: 48, borderRadius: 10 },
+    linkedTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(15), color: t.text },
+    linkedMeta: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), marginTop: 2 },
+    unlinkBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     chip: {
       minHeight: 40,

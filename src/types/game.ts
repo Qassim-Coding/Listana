@@ -11,4 +11,8 @@ export interface Game {
   releaseDate?: string;
   notes?: string;
   lastCheckpoint?: string;
+  // Lien RAWG (optionnel)
+  rawgId?: number;
+  coverUrl?: string;
+  source?: "manual" | "rawg";
 }

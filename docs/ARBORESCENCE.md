@@ -2,11 +2,11 @@
 
 Version 2 (Expo SDK 54, React 19.1, React Native 0.81, Expo Router 6).
 
-Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` sont générés. `app-example/` (modèle Expo d’origine) et `.env.local` sont présents en local et ignorés par Git.
+Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` sont générés. `.env.local` est présent en local et ignoré par Git.
 
 ```
 .
-|-- .env.local                          # EXPO_PUBLIC_TMDB_TOKEN (non versionné)
+|-- .env.local                          # EXPO_PUBLIC_TMDB_TOKEN, EXPO_PUBLIC_RAWG_KEY (non versionné)
 |-- .github/
 |   |-- workflows/
 |       |-- deploy-web.yml              # Build web puis déploiement GitHub Pages
@@ -42,14 +42,15 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |-- theme.ts                        # Palettes clair/sombre, polices, tailles, en-têtes
 |   |-- ThemeContext.tsx                # ThemeProvider, useTheme, useSettings
 |   |-- api/
-|   |   |-- tmdb.ts                     # Recherche et détails films / séries (TMDB)
+|   |   |-- tmdb.ts                     # Recherche et détails films / séries / animés (TMDB)
+|   |   |-- openLibrary.ts              # Recherche de livres et couvertures (sans clé)
 |   |-- components/
 |   |   |-- MediaCard.tsx               # Tuile de catégorie (icône + couleur)
 |   |   |-- MediaGrid.tsx               # Grille des catégories
 |   |   |-- ResumeSection.tsx           # Section « Reprendre » de l'accueil
 |   |   |-- WebBackButton.tsx           # En-tête retour sur le web
 |   |   |-- DateField.tsx               # Sélecteur de date (calendrier, format AAAA-MM-JJ)
-|   |   |-- MediaSearchField.tsx        # Champ de recherche TMDB avec résultats et affiches
+|   |   |-- MediaSearchField.tsx        # Champ de recherche (TMDB, Open Library, RAWG)
 |   |   |-- ProgressUpdateModal.tsx     # Mise à jour de progression générique (films)
 |   |   |-- AnimeCard.tsx
 |   |   |-- AnimeFormModal.tsx          # Ajout et modification d'un animé (recherche TMDB)
@@ -58,13 +59,13 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- MovieCard.tsx
 |   |   |-- MovieFormModal.tsx          # Ajout et modification d'un film (TMDB, note /5)
 |   |   |-- BookCard.tsx
-|   |   |-- AddBookModal.tsx            # Ajout et modification d'un livre
+|   |   |-- AddBookModal.tsx            # Ajout et modification d'un livre (recherche Open Library)
 |   |   |-- UpdateBookPageModal.tsx     # Mise à jour de la page atteinte
 |   |   |-- MangaCard.tsx
 |   |   |-- EditMangaModal.tsx          # Ajout et modification d'un manga
 |   |   |-- UpdateMangaProgressModal.tsx # Mise à jour tome / chapitre
 |   |   |-- GameCard.tsx
-|   |   |-- GameFormModal.tsx           # Ajout et modification d'un jeu
+|   |   |-- GameFormModal.tsx           # Ajout et modification d'un jeu (recherche RAWG)
 |   |   |-- PodcastCard.tsx
 |   |   |-- PodcastFormModal.tsx        # Ajout et modification (podcast ou livre audio)
 |   |   |-- NoteCard.tsx
@@ -114,15 +115,17 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 - **Largeur** : seuil desktop à 768 px sur l'accueil et la grille.
 - **Notes** : trois types (`free`, `list`, `work`). Une note `work` est liée à une œuvre de n'importe quel média via `libraryWorks.ts`, et peut porter des repères (`NoteMark` : « p. 134 », « Ép. 14 »…).
 
-## Intégration TMDB
+## Intégrations API
 
-`src/api/tmdb.ts` interroge l'API TMDB (films et séries, langue `fr-FR`) avec le jeton `EXPO_PUBLIC_TMDB_TOKEN`.
+Les jetons optionnels sont lus dans `.env.local` (ignoré par Git). Sans jeton, le champ de recherche correspondant n'est pas affiché : les formulaires restent utilisables en saisie manuelle. `MediaSearchField` lance la recherche 450 ms après la dernière frappe, jusqu'à 8 résultats.
 
-- Le jeton est lu dans `.env.local`, ignoré par Git.
-- Sans jeton, `hasTmdbToken()` renvoie `false` et le champ de recherche n'est pas affiché : les formulaires restent utilisables en saisie manuelle.
-- Les formulaires Films, Séries et Animés utilisent `MediaSearchField` (recherche 450 ms après la dernière frappe, 8 résultats) puis `getMovieDetails` / `getTVDetails` pour remplir titre, année, durée, saisons, affiche.
-- Les éléments créés par ce biais portent `source: "tmdb"` et `tmdbId`.
-- Le workflow `deploy-web.yml` ne transmet pas ce jeton : la démo GitHub Pages n'a pas la recherche TMDB tant qu'un secret `EXPO_PUBLIC_TMDB_TOKEN` n'y est pas ajouté.
+**TMDB** (`src/api/tmdb.ts`, jeton `EXPO_PUBLIC_TMDB_TOKEN`) — films, séries et animés, langue `fr-FR`. Les formulaires appellent `getMovieDetails` / `getTVDetails` pour remplir titre, année, durée, saisons et affiche. Les éléments créés portent `source: "tmdb"` et `tmdbId`.
+
+**Open Library** (`src/api/openLibrary.ts`) — livres, sans clé. Le formulaire remplit titre, auteur, année, nombre de pages et couverture. Les éléments créés portent `source: "openlibrary"` et `olKey`.
+
+**RAWG** — jeux vidéo, clé `EXPO_PUBLIC_RAWG_KEY`. Recherche de titres et jaquettes. Mentionnée dans Paramètres → À propos.
+
+Le workflow `deploy-web.yml` ne transmet ni `EXPO_PUBLIC_TMDB_TOKEN` ni `EXPO_PUBLIC_RAWG_KEY` : la démo GitHub Pages n'a pas ces recherches tant que ces secrets n'y sont pas ajoutés.
 
 ## Persistance
 

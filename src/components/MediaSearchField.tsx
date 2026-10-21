@@ -5,19 +5,22 @@ import { SearchResult } from "../api/tmdb";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 
-type Props = {
+// Un résultat peut avoir une ligne en plus sous le titre (ex. l'auteur d'un livre)
+type Item = SearchResult & { subtitle?: string };
+
+type Props<R extends Item> = {
   placeholder: string;
-  search: (query: string) => Promise<SearchResult[]>;
-  onPick: (result: SearchResult) => void;
+  search: (query: string) => Promise<R[]>;
+  onPick: (result: R) => void;
   color: string;
   credit?: string;
 };
 
-export default function MediaSearchField({ placeholder, search, onPick, color, credit }: Props) {
+export default function MediaSearchField<R extends Item>({ placeholder, search, onPick, color, credit }: Props<R>) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<R[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
@@ -53,7 +56,7 @@ export default function MediaSearchField({ placeholder, search, onPick, color, c
     };
   }, [query, search]);
 
-  function pick(r: SearchResult) {
+  function pick(r: R) {
     onPick(r);
     setQuery("");
     setResults([]);
@@ -84,30 +87,37 @@ export default function MediaSearchField({ placeholder, search, onPick, color, c
 
       {results.length > 0 && (
         <View style={styles.results}>
-          {results.map((r) => (
-            <Pressable
-              key={r.id}
-              onPress={() => pick(r)}
-              accessibilityRole="button"
-              accessibilityLabel={`${r.title}${r.year ? `, ${r.year}` : ""}`}
-              style={({ pressed }) => [styles.row, pressed && { backgroundColor: t.cardAlt }]}
-            >
-              {r.posterUrl ? (
-                <Image source={{ uri: r.posterUrl }} style={styles.poster} />
-              ) : (
-                <View style={[styles.poster, styles.posterEmpty, { backgroundColor: color + "33" }]}>
-                  <Text style={[styles.posterLetter, { color }]}>{r.title.charAt(0).toUpperCase()}</Text>
+          {results.map((r) => {
+            const meta = [r.subtitle, r.year].filter(Boolean).join(" · ");
+            return (
+              <Pressable
+                key={`${r.id}-${r.title}`}
+                onPress={() => pick(r)}
+                accessibilityRole="button"
+                accessibilityLabel={`${r.title}${meta ? `, ${meta}` : ""}`}
+                style={({ pressed }) => [styles.row, pressed && { backgroundColor: t.cardAlt }]}
+              >
+                {r.posterUrl ? (
+                  <Image source={{ uri: r.posterUrl }} style={styles.poster} />
+                ) : (
+                  <View style={[styles.poster, styles.posterEmpty, { backgroundColor: color + "33" }]}>
+                    <Text style={[styles.posterLetter, { color }]}>{r.title.charAt(0).toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.rowTitle} numberOfLines={2}>
+                    {r.title}
+                  </Text>
+                  {meta ? (
+                    <Text style={styles.rowYear} numberOfLines={1}>
+                      {meta}
+                    </Text>
+                  ) : null}
                 </View>
-              )}
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.rowTitle} numberOfLines={2}>
-                  {r.title}
-                </Text>
-                {r.year ? <Text style={styles.rowYear}>{r.year}</Text> : null}
-              </View>
-              <Ionicons name="add-circle-outline" size={24} color={color} />
-            </Pressable>
-          ))}
+                <Ionicons name="add-circle-outline" size={24} color={color} />
+              </Pressable>
+            );
+          })}
           {credit ? <Text style={styles.credit}>{credit}</Text> : null}
         </View>
       )}

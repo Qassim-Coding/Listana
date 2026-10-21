@@ -20,7 +20,7 @@ import WebBackButton from "../src/components/WebBackButton";
 import { useBooks } from "../src/hooks/useBooks";
 import { Theme, makeHeaderOptions } from "../src/theme";
 import { useTheme } from "../src/ThemeContext";
-import { Book, BookStatus } from "../src/types/book";
+import { Book, BookInput, BookStatus } from "../src/types/book";
 
 const isWeb = Platform.OS === "web";
 
@@ -41,6 +41,23 @@ export default function BooksScreen() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Book | null>(null);
   const [pageBook, setPageBook] = useState<Book | null>(null);
+
+  // Valeurs de départ du formulaire (recalculées seulement quand on change de livre)
+  const editInitial = useMemo<BookInput | undefined>(
+    () =>
+      editing
+        ? {
+            title: editing.title,
+            author: editing.author,
+            totalPages: editing.totalPages,
+            notes: editing.notes,
+            coverUrl: editing.coverUrl,
+            olKey: editing.olKey,
+            year: editing.year,
+          }
+        : undefined,
+    [editing]
+  );
 
   const count = (f: Filter) => (f === "all" ? books.length : books.filter((b) => b.status === f).length);
 
@@ -124,7 +141,7 @@ export default function BooksScreen() {
             contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
             ListEmptyComponent={
               <Text style={styles.empty}>
-                Aucun livre ici pour l'instant. Les pages sont optionnelles.
+                Aucun livre ici pour l’instant. Les pages sont optionnelles.
               </Text>
             }
             renderItem={({ item }) => (
@@ -147,11 +164,7 @@ export default function BooksScreen() {
         visible={formOpen}
         onClose={() => setFormOpen(false)}
         heading={editing ? "Modifier le livre" : "Ajouter un livre"}
-        initial={
-          editing
-            ? { title: editing.title, author: editing.author, totalPages: editing.totalPages, notes: editing.notes }
-            : undefined
-        }
+        initial={editInitial}
         onSubmit={(data) => {
           if (editing) updateBook(editing.id, data);
           else addBook(data);
