@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import React, { useMemo } from "react";
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
+import { APP_VERSION_LABEL } from "../src/constants/version";
 import { TextSize, Theme, ThemeMode, makeHeaderOptions } from "../src/theme";
 import { useSettings } from "../src/ThemeContext";
 
@@ -98,7 +99,7 @@ export default function SettingsPage() {
 
         <Text style={styles.section}>À propos</Text>
         <View style={styles.card}>
-          <Text style={styles.aboutTitle}>Listana</Text>
+          <Text style={styles.aboutTitle}>{APP_VERSION_LABEL}</Text>
           <Text style={styles.aboutText}>Les informations et les images des œuvres viennent de ces services :</Text>
           {SOURCES.map((s) => (
             <Pressable

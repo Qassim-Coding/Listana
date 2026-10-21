@@ -1,6 +1,6 @@
 {
   "name": "listana",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "homepage": "https://qassim-coding.github.io/Listana",
   "private": true,
   "main": "expo-router/entry",

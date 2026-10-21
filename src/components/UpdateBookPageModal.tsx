@@ -123,16 +123,18 @@ export default function UpdateBookPageModal({ book, onClose, onSave, onMarkDone 
           >
             <Text style={styles.saveText}>Enregistrer</Text>
           </Pressable>
-          <Pressable
-            onPress={() => {
-              onMarkDone();
-              onClose();
-            }}
-            accessibilityRole="button"
-            style={styles.doneBtn}
-          >
-            <Text style={styles.doneText}>Marquer comme terminé</Text>
-          </Pressable>
+          {book.status !== "done" && (
+            <Pressable
+              onPress={() => {
+                onMarkDone();
+                onClose();
+              }}
+              accessibilityRole="button"
+              style={styles.doneBtn}
+            >
+              <Text style={styles.doneText}>Marquer comme terminé</Text>
+            </Pressable>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>

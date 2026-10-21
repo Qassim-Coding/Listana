@@ -14,6 +14,7 @@ import {
 import MediaGrid from "../src/components/MediaGrid";
 import ResumeSection from "../src/components/ResumeSection";
 import { MEDIA } from "../src/constants/media";
+import { APP_VERSION_LABEL } from "../src/constants/version";
 import { useResumeItems } from "../src/hooks/useResumeItems";
 import { Theme } from "../src/theme";
 import { useTheme } from "../src/ThemeContext";
@@ -83,7 +84,7 @@ export default function Home() {
         <Text onPress={() => router.push("/privacy")} style={styles.linkText}>
           Confidentialité
         </Text>
-        <Text style={styles.version}>Listana V2.0</Text>
+        <Text style={styles.version}>{APP_VERSION_LABEL}</Text>
       </ScrollView>
     </SafeAreaView>
   );

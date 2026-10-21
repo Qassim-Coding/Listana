@@ -77,21 +77,15 @@ export default function BookCard({ book, onEdit, onUpdatePage }: Props) {
         ) : null}
       </View>
 
-      {done ? (
-        <View style={styles.doneBadge} accessibilityLabel="Terminé">
-          <Ionicons name="checkmark" size={20} color={t.textMuted} />
-        </View>
-      ) : (
-        <Pressable
-          onPress={() => onUpdatePage(book)}
-          accessibilityRole="button"
-          accessibilityLabel={`Mettre à jour la page de ${book.title}`}
-          hitSlop={8}
-          style={styles.updateBtn}
-        >
-          <Ionicons name="create-outline" size={20} color={t.onAccent} />
-        </Pressable>
-      )}
+      <Pressable
+        onPress={() => onUpdatePage(book)}
+        accessibilityRole="button"
+        accessibilityLabel={`Mettre à jour la page de ${book.title}`}
+        hitSlop={8}
+        style={styles.updateBtn}
+      >
+        <Ionicons name="create-outline" size={20} color={t.onAccent} />
+      </Pressable>
     </Pressable>
   );
 }
@@ -126,14 +120,6 @@ function makeStyles(t: Theme) {
       height: 44,
       borderRadius: 22,
       backgroundColor: t.accent,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    doneBadge: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: t.cardAlt,
       alignItems: "center",
       justifyContent: "center",
     },
