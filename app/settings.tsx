@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import React, { useMemo } from "react";
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import WebBackButton from "../src/components/WebBackButton";
-import { APP_VERSION_LABEL } from "../src/constants/version";
 import { TextSize, Theme, ThemeMode, makeHeaderOptions } from "../src/theme";
 import { useSettings } from "../src/ThemeContext";
 
@@ -25,7 +24,7 @@ const SOURCES: { label: string; detail: string; url: string }[] = [
   { label: "TMDB", detail: "Films, séries et animés", url: "https://www.themoviedb.org" },
   { label: "Open Library", detail: "Livres", url: "https://openlibrary.org" },
   { label: "RAWG", detail: "Jeux vidéo", url: "https://rawg.io" },
-  { label: "MyAnimeList (via Jikan)", detail: "Mangas", url: "https://myanimelist.net" },
+  { label: "MyAnimeList", detail: "Mangas", url: "https://myanimelist.net" },
 ];
 
 function Segmented<K extends string>({
@@ -99,7 +98,7 @@ export default function SettingsPage() {
 
         <Text style={styles.section}>À propos</Text>
         <View style={styles.card}>
-          <Text style={styles.aboutTitle}>{APP_VERSION_LABEL}</Text>
+          <Text style={styles.aboutTitle}>Listana</Text>
           <Text style={styles.aboutText}>Les informations et les images des œuvres viennent de ces services :</Text>
           {SOURCES.map((s) => (
             <Pressable

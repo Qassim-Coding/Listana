@@ -13,7 +13,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { MangaSearchResult, searchManga } from "../api/jikan";
+import { MangaSearchResult, searchManga } from "../api/mal";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Manga, MangaStatus } from "../types/manga";
@@ -49,7 +49,7 @@ export default function EditMangaModal({
   const [progressMode, setProgressMode] = useState<"volume" | "chapter">(
     initial?.progressMode ?? (initial?.volumeNumber ? "volume" : "chapter")
   );
-  // Lien MyAnimeList (via Jikan)
+  // Lien MyAnimeList (API officielle)
   const [malId, setMalId] = useState<number | undefined>(initial?.malId);
   const [coverUrl, setCoverUrl] = useState<string | undefined>(initial?.coverUrl);
   const [totalVolumes, setTotalVolumes] = useState<number | undefined>(initial?.totalVolumes);
@@ -101,7 +101,7 @@ export default function EditMangaModal({
       coverUrl,
       totalVolumes,
       totalChapters,
-      source: malId ? "jikan" : "manual",
+      source: malId ? "mal" : "manual",
     });
     onClose();
   }
@@ -158,7 +158,7 @@ export default function EditMangaModal({
                   search={searchManga}
                   onPick={handlePick}
                   color={color}
-                  credit="Données et couvertures : MyAnimeList via Jikan"
+                  credit="Données et couvertures : MyAnimeList"
                 />
               </>
             )}

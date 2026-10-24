@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import { FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { MAL_URL } from "../api/jikan";
+import { MAL_URL } from "../api/mal";
 import EditMangaModal from "../components/EditMangaModal";
 import MangaCard from "../components/MangaCard";
 import UpdateMangaProgressModal from "../components/UpdateMangaProgressModal";
@@ -177,10 +177,10 @@ export default function MangasScreen() {
             <Pressable
               onPress={() => Linking.openURL(MAL_URL)}
               accessibilityRole="link"
-              accessibilityLabel="Données des mangas fournies par MyAnimeList via Jikan, ouvrir myanimelist.net"
+              accessibilityLabel="Données des mangas fournies par MyAnimeList, ouvrir myanimelist.net"
               style={styles.credit}
             >
-              <Text style={styles.creditText}>Données et couvertures : MyAnimeList via Jikan</Text>
+              <Text style={styles.creditText}>Données et couvertures : MyAnimeList</Text>
             </Pressable>
           ) : null
         }

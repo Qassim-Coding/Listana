@@ -11,10 +11,9 @@ const isWeb = Platform.OS === "web";
 // À remplir avec l'adresse de contact que tu veux rendre publique
 const CONTACT_EMAIL = "";
 const UPDATED = "octobre 2026";
+const TMDB_PRIVACY_URL = "https://www.themoviedb.org/privacy-policy";
 
 type IconName = React.ComponentProps<typeof Ionicons>["name"];
-type SectionLink = { label: string; url: string };
-type Section = { icon: IconName; title: string; body: string[]; links?: SectionLink[] };
 
 const SUMMARY: { icon: IconName; text: string }[] = [
   { icon: "phone-portrait-outline", text: "Tout reste sur ton appareil" },
@@ -22,7 +21,7 @@ const SUMMARY: { icon: IconName; text: string }[] = [
   { icon: "search-outline", text: "Seules tes recherches quittent ton appareil" },
 ];
 
-const SECTIONS: Section[] = [
+const SECTIONS: { icon: IconName; title: string; body: string[] }[] = [
   {
     icon: "server-outline",
     title: "Données et stockage",
@@ -35,15 +34,9 @@ const SECTIONS: Section[] = [
     icon: "film-outline",
     title: "Recherche d’œuvres",
     body: [
-      "Quand tu cherches une œuvre, le texte de ta recherche est envoyé au service correspondant pour trouver les résultats, et les images sont chargées depuis ses serveurs : TMDB (The Movie Database) pour les films, séries et animés, Open Library pour les livres, RAWG pour les jeux vidéo. Comme pour n’importe quel site, ce service reçoit alors ton adresse IP.",
+      "Quand tu cherches une œuvre, le texte de ta recherche est envoyé au service correspondant pour trouver les résultats, et les images sont chargées depuis ses serveurs : TMDB (The Movie Database) pour les films, séries et animés, Open Library pour les livres, RAWG pour les jeux vidéo, MyAnimeList pour les mangas. Comme pour n’importe quel site, ce service reçoit alors ton adresse IP.",
       "Rien d’autre n’est transmis : ni ta bibliothèque, ni tes notes, ni tes avis.",
       "This product uses the TMDB API but is not endorsed or certified by TMDB.",
-      "This product uses the RAWG API but is not endorsed or certified by RAWG.",
-    ],
-    links: [
-      { label: "Politique de confidentialité de TMDB", url: "https://www.themoviedb.org/privacy-policy" },
-      { label: "Politique de confidentialité de RAWG", url: "https://rawg.io/privacy" },
-      { label: "Conditions d’Open Library", url: "https://openlibrary.org/about/terms" },
     ],
   },
   {
@@ -65,7 +58,7 @@ const SECTIONS: Section[] = [
     title: "Publicité et statistiques",
     body: [
       "Listana n’intègre aucun outil de publicité, de mesure d’audience ou de suivi.",
-      "Si d’autres sources sont ajoutées plus tard (par exemple pour les mangas), cette page sera mise à jour avant.",
+      "Si d’autres sources sont ajoutées plus tard (par exemple pour les podcasts), cette page sera mise à jour avant.",
     ],
   },
 ];
@@ -112,17 +105,16 @@ export default function PrivacyPage() {
                   {p}
                 </Text>
               ))}
-              {s.links?.map((link) => (
+              {s.title.startsWith("Recherche") && (
                 <Pressable
-                  key={link.url}
-                  onPress={() => Linking.openURL(link.url)}
+                  onPress={() => Linking.openURL(TMDB_PRIVACY_URL)}
                   accessibilityRole="link"
                   style={styles.linkBtn}
                 >
-                  <Text style={styles.linkText}>{link.label}</Text>
+                  <Text style={styles.linkText}>Politique de confidentialité de TMDB</Text>
                   <Ionicons name="open-outline" size={16} color={t.text} />
                 </Pressable>
-              ))}
+              )}
             </View>
           ))}
 
