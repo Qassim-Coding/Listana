@@ -25,6 +25,7 @@ const SOURCES: { label: string; detail: string; url: string }[] = [
   { label: "Open Library", detail: "Livres", url: "https://openlibrary.org" },
   { label: "RAWG", detail: "Jeux vidéo", url: "https://rawg.io" },
   { label: "MyAnimeList", detail: "Mangas", url: "https://myanimelist.net" },
+  { label: "Apple Podcasts et Apple Books", detail: "Podcasts et livres audio", url: "https://podcasts.apple.com" },
 ];
 
 function Segmented<K extends string>({

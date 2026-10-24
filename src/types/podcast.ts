@@ -9,6 +9,15 @@ export interface Podcast {
   kind?: PodcastKind; // default: "podcast"
   notes?: string;
   lastEpisode?: string;
+
+  // Lien Apple Podcasts / Apple Books (optionnel)
+  appleId?: number; // identifiant Apple de l'émission ou du livre audio (collectionId)
+  coverUrl?: string; // pochette chargée depuis Apple
+  storeUrl?: string; // fiche Apple : le lien « Écouter sur… » est obligatoire à côté de la pochette
+  genre?: string;
+  episodeCount?: number; // nombre d'épisodes annoncé par Apple (podcasts seulement)
+  source?: "manual" | "apple";
+
   createdAt: number;
   updatedAt: number;
   archived: boolean;

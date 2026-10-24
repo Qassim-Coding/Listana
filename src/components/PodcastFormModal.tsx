@@ -1,19 +1,23 @@
+import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { useTheme } from "../ThemeContext";
+import { AppleSearchResult, searchAppleAudiobooks, searchApplePodcasts } from "../api/itunes";
 import { Theme } from "../theme";
+import { useTheme } from "../ThemeContext";
 import { Podcast, PodcastKind, PodcastStatus } from "../types/podcast";
+import MediaSearchField from "./MediaSearchField";
 import { PODCAST_KIND_LABEL, PODCAST_STATUS_LABEL } from "./PodcastCard";
 
 type Props = {
@@ -37,6 +41,12 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
   const [kind, setKind] = useState<PodcastKind>("podcast");
   const [lastEpisode, setLastEpisode] = useState("");
   const [notes, setNotes] = useState("");
+  // Lien Apple (rempli quand on choisit un résultat de recherche)
+  const [appleId, setAppleId] = useState<number | undefined>(undefined);
+  const [coverUrl, setCoverUrl] = useState<string | undefined>(undefined);
+  const [storeUrl, setStoreUrl] = useState<string | undefined>(undefined);
+  const [genre, setGenre] = useState<string | undefined>(undefined);
+  const [episodeCount, setEpisodeCount] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (!visible) return;
@@ -46,9 +56,38 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
     setKind(initial?.kind ?? "podcast");
     setLastEpisode(initial?.lastEpisode ?? "");
     setNotes(initial?.notes ?? "");
+    setAppleId(initial?.appleId);
+    setCoverUrl(initial?.coverUrl);
+    setStoreUrl(initial?.storeUrl);
+    setGenre(initial?.genre);
+    setEpisodeCount(initial?.episodeCount);
   }, [initial, visible]);
 
   const valid = title.trim().length > 0;
+
+  function handlePick(r: AppleSearchResult) {
+    setTitle(r.title);
+    if (r.author) setHost(r.author);
+    setAppleId(r.id);
+    setCoverUrl(r.posterUrl);
+    setStoreUrl(r.storeUrl);
+    setGenre(r.genre);
+    setEpisodeCount(r.episodeCount);
+  }
+
+  function unlink() {
+    setAppleId(undefined);
+    setCoverUrl(undefined);
+    setStoreUrl(undefined);
+    setGenre(undefined);
+    setEpisodeCount(undefined);
+  }
+
+  // Un lien pris dans le catalogue des podcasts ne vaut pas pour un livre audio (et inversement)
+  function changeKind(k: PodcastKind) {
+    if (k !== kind && appleId) unlink();
+    setKind(k);
+  }
 
   function handleSave() {
     if (!valid) return;
@@ -59,6 +98,12 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
       kind,
       lastEpisode: lastEpisode.trim() || undefined,
       notes: notes.trim() || undefined,
+      appleId,
+      coverUrl,
+      storeUrl,
+      genre,
+      episodeCount,
+      source: appleId ? "apple" : "manual",
     });
     onClose();
   }
@@ -82,6 +127,15 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
   }
 
   const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
+  const color = t.media.podcast;
+  const store = kind === "audiobook" ? "Apple Books" : "Apple Podcasts";
+  const linkedMeta = [
+    `Relié à ${store}`,
+    episodeCount ? `${episodeCount} épisode${episodeCount > 1 ? "s" : ""}` : "",
+    genre ?? "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -98,7 +152,7 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
                 return (
                   <Pressable
                     key={k}
-                    onPress={() => setKind(k)}
+                    onPress={() => changeKind(k)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
                     style={[styles.segmentBtn, on && styles.segmentBtnOn]}
@@ -108,6 +162,48 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
                 );
               })}
             </View>
+
+            {!appleId && (
+              <>
+                <Text style={styles.label}>
+                  {kind === "audiobook" ? "Rechercher un livre audio" : "Rechercher un podcast"}
+                </Text>
+                {/* La fonction de recherche change avec le type : podcasts ou livres audio */}
+                <MediaSearchField
+                  placeholder={kind === "audiobook" ? "Ex. Dune" : "Ex. 10'000 pas du Raptor"}
+                  search={kind === "audiobook" ? searchAppleAudiobooks : searchApplePodcasts}
+                  onPick={handlePick}
+                  color={color}
+                  credit={`Recherche et pochettes : ${store}`}
+                />
+              </>
+            )}
+
+            {!!appleId && (
+              <View style={[styles.linked, { borderColor: color + "66" }]}>
+                {coverUrl ? (
+                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+                ) : (
+                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+                )}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.linkedTitle} numberOfLines={2}>
+                    {title || "Sans titre"}
+                  </Text>
+                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={2}>
+                    {linkedMeta}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={unlink}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Retirer le lien ${store}`}
+                  style={styles.unlinkBtn}
+                >
+                  <Ionicons name="close" size={20} color={t.textMuted} />
+                </Pressable>
+              </View>
+            )}
 
             <Text style={styles.label}>Titre *</Text>
             <TextInput
@@ -235,6 +331,20 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 90, textAlignVertical: "top" },
+    linked: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      marginTop: 12,
+      padding: 10,
+      borderRadius: 16,
+      borderWidth: 1,
+      backgroundColor: t.bg,
+    },
+    linkedCover: { width: 56, height: 56, borderRadius: 12 },
+    linkedTitle: { fontFamily: t.fonts.bold, fontSize: t.fs(15), color: t.text },
+    linkedMeta: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), marginTop: 2 },
+    unlinkBtn: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
     segment: { flexDirection: "row", gap: 4, padding: 4, borderRadius: 16, backgroundColor: t.bg },
     segmentBtn: { flex: 1, minHeight: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
     segmentBtnOn: { backgroundColor: t.cardAlt },

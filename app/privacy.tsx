@@ -34,8 +34,9 @@ const SECTIONS: { icon: IconName; title: string; body: string[] }[] = [
     icon: "film-outline",
     title: "Recherche d’œuvres",
     body: [
-      "Quand tu cherches une œuvre, le texte de ta recherche est envoyé au service correspondant pour trouver les résultats, et les images sont chargées depuis ses serveurs : TMDB (The Movie Database) pour les films, séries et animés, Open Library pour les livres, RAWG pour les jeux vidéo, MyAnimeList pour les mangas. Comme pour n’importe quel site, ce service reçoit alors ton adresse IP.",
+      "Quand tu cherches une œuvre, le texte de ta recherche est envoyé au service correspondant pour trouver les résultats, et les images sont chargées depuis ses serveurs : TMDB (The Movie Database) pour les films, séries et animés, Open Library pour les livres, RAWG pour les jeux vidéo, MyAnimeList pour les mangas, Apple pour les podcasts et les livres audio. Comme pour n’importe quel site, ce service reçoit alors ton adresse IP.",
       "Rien d’autre n’est transmis : ni ta bibliothèque, ni tes notes, ni tes avis.",
+      "Le lien « Écouter sur Apple Podcasts » ou « Écouter sur Apple Books » ouvre la fiche chez Apple : à partir de là, c’est la politique de confidentialité d’Apple qui s’applique.",
       "This product uses the TMDB API but is not endorsed or certified by TMDB.",
     ],
   },
@@ -58,7 +59,7 @@ const SECTIONS: { icon: IconName; title: string; body: string[] }[] = [
     title: "Publicité et statistiques",
     body: [
       "Listana n’intègre aucun outil de publicité, de mesure d’audience ou de suivi.",
-      "Si d’autres sources sont ajoutées plus tard (par exemple pour les podcasts), cette page sera mise à jour avant.",
+      "Si d’autres sources sont ajoutées plus tard, cette page sera mise à jour avant.",
     ],
   },
 ];

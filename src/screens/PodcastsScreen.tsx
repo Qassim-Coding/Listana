@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { FlatList, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { APPLE_PODCASTS_URL } from "../api/itunes";
 import PodcastCard, { PODCAST_STATUS_LABEL } from "../components/PodcastCard";
 import PodcastFormModal from "../components/PodcastFormModal";
 import {
@@ -82,6 +83,13 @@ export default function PodcastsScreen() {
         kind: changes.kind ?? "podcast",
         notes: changes.notes,
         lastEpisode: changes.lastEpisode,
+        // Lien Apple : à recopier ici, sinon il serait perdu à l'ajout
+        appleId: changes.appleId,
+        coverUrl: changes.coverUrl,
+        storeUrl: changes.storeUrl,
+        genre: changes.genre,
+        episodeCount: changes.episodeCount,
+        source: changes.source ?? "manual",
         createdAt: now,
         updatedAt: now,
         archived: false,
@@ -117,6 +125,7 @@ export default function PodcastsScreen() {
     .filter((p) => !p.archived)
     .filter((p) => (kindFilter === "all" ? true : (p.kind ?? "podcast") === kindFilter));
   const count = (f: Filter) => (f === "all" ? active.length : active.filter((p) => p.status === f).length);
+  const usesApple = active.some((p) => !!p.appleId);
 
   const bySearch = query ? searchPodcasts(active, query) : active;
   const byStatus = filter === "all" ? bySearch : bySearch.filter((p) => p.status === filter);
@@ -190,6 +199,18 @@ export default function PodcastsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
         ListEmptyComponent={<Text style={styles.empty}>Rien ici pour l'instant.</Text>}
+        ListFooterComponent={
+          usesApple ? (
+            <Pressable
+              onPress={() => Linking.openURL(APPLE_PODCASTS_URL)}
+              accessibilityRole="link"
+              accessibilityLabel="Pochettes et infos fournies par Apple Podcasts et Apple Books, ouvrir le site"
+              style={styles.credit}
+            >
+              <Text style={styles.creditText}>Pochettes et infos : Apple Podcasts et Apple Books</Text>
+            </Pressable>
+          ) : null
+        }
         renderItem={({ item }) => (
           <PodcastCard item={item} onEdit={handleEdit} onNextEpisode={handleNextEpisode} />
         )}
@@ -264,5 +285,7 @@ function makeStyles(t: Theme) {
       gap: 8,
     },
     addText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
+    credit: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 4 },
+    creditText: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, textDecorationLine: "underline" },
   });
 }
