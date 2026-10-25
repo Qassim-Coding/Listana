@@ -80,7 +80,7 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- statusColors.ts             # 4 familles d'états (en cours, prévu, terminé, abandonné)
 |   |-- hooks/
 |   |   |-- useStorage.ts               # MMKV si disponible, sinon AsyncStorage
-|   |   |-- useResumeItems.ts
+|   |   |-- useResumeItems.ts           # Accueil : lit resumeLibrary + rafraîchit le widget
 |   |   |-- useAnimes.ts
 |   |   |-- useBooks.ts                 # Statut dérivé de la page ; markAbandoned
 |   |   |-- useMovies.ts
@@ -101,12 +101,22 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- anime.ts | book.ts | game.ts | manga.ts | movie.ts | podcast.ts | tvshow.ts
 |   |   |-- note.ts
 |   |-- utils/
-|       |-- mangaProgress.ts
-|       |-- libraryWorks.ts
-|-- app.json                            # version 2.0.0, com.listana.app, hash history, EAS
+|   |   |-- mangaProgress.ts
+|   |   |-- libraryWorks.ts
+|   |   |-- resumeLibrary.ts            # Lecture bibliothèque (accueil + widget, sans hook)
+|   |-- widgets/
+|       |-- ResumeWidget.tsx            # Dessin « Reprendre » (FlexWidget / TextWidget)
+|       |-- renderResume.tsx            # Charge la bibliothèque, versions clair / sombre
+|       |-- widgetTaskHandler.tsx       # Ajout, redimensionnement, MAJ toutes les 30 min
+|       |-- register.ts                 # Web / iOS : no-op
+|       |-- register.android.ts         # Branche le handler
+|       |-- refresh.ts                  # Web / iOS : no-op
+|       |-- refresh.android.ts          # requestWidgetUpdate
+|-- app.json                            # version 2.0.0, plugin widget Resume, hash history, EAS
 |-- eas.json
 |-- eslint.config.js
-|-- package.json                        # version 2.0.0
+|-- index.ts                            # Point d'entrée : expo-router + register widgets
+|-- package.json                        # version 2.0.0, main = index.ts
 |-- README.md
 |-- tsconfig.json
 ```
@@ -122,6 +132,7 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 - **Listes** : barre « Filtrer ma liste » sur chaque écran média (notes : « Chercher dans mes notes »).
 - **Notes** : `free`, `list`, `work`. Une note `work` se lie à une œuvre via `libraryWorks.ts` et peut porter des `NoteMark`.
 - **Livres** : le statut (`planning` / `in_progress` / `done`) est recalculé à partir de la page, sauf `abandoned` (choisi à la main). Le crayon de mise à jour reste visible après « Terminé » ou « Abandonné » : enregistrer une page remet le livre « En cours ».
+- **Widget Android** : `Listana · Reprendre` (`react-native-android-widget`, plugin dans `app.json`). Affiche jusqu'à 4 œuvres en cours (selon la hauteur). Un appui sur l'en-tête ouvre l'accueil (`OPEN_APP`) ; un appui sur une ligne ouvre l'écran du média (`listana://…`). Thème clair / sombre selon le téléphone. Mise à jour à l'ajout, au redimensionnement, toutes les 30 min, au retour sur l'accueil, et quand l'app passe en arrière-plan. Android seulement (fichiers `*.android.ts`) : no-op sur web / iOS. Visible uniquement sur un **build natif** (EAS / `npx expo run:android`), pas Expo Go.
 
 ## Intégrations API
 
@@ -155,7 +166,7 @@ Le workflow `deploy-web.yml` ne transmet **aucun jeton, et c'est voulu** : la d�
 | Podcasts | `podcast.store` | `listana.podcast.v1` |
 | Paramètres | `ThemeContext` | `listana.settings.v1` |
 
-Les stores attendent la fin du chargement avant d'écrire. `useResumeItems` et `libraryWorks.ts` relisent ces clés.
+Les stores attendent la fin du chargement avant d'écrire. `resumeLibrary.ts` relit ces clés pour l'accueil et le widget. `libraryWorks.ts` aussi, pour les notes liées à une œuvre.
 
 ## Icônes
 

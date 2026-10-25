@@ -7,7 +7,7 @@ Listana regroupe au même endroit ce que vous regardez, lisez, jouez et écoutez
 ## Pourquoi c'est utile
 
 - **Un seul carnet** pour les animés, séries, films, livres, mangas, jeux vidéo, podcasts, livres audio et notes.
-- **Reprendre en un coup d'œil** : l'accueil affiche ce qui est en cours, tous médias confondus.
+- **Reprendre en un coup d'œil** : l'accueil affiche ce qui est en cours, tous médias confondus. Sur Android, le widget **Listana · Reprendre** le montre aussi depuis l'écran d'accueil.
 - **Une progression adaptée au média** : épisodes et saisons, minutes, pages, tomes ou chapitres.
 - **Mise à jour rapide** : +1 épisode, ou saisie de la page, du chapitre ou des minutes.
 - **Fiches remplies pour vous** : TMDB, Open Library, RAWG, MyAnimeList, Apple Podcasts / Books.
@@ -43,6 +43,15 @@ Partout : barre « Filtrer ma liste », filtres d'état colorés, tri, modificat
 Les cartes et les puces de filtre partagent 4 couleurs d'état : bleu (en cours), orange (à voir / lire / jouer / écouter), vert (terminé), rouge (abandonné).
 
 Les fenêtres d'ajout et de modification utilisent un `BottomSheet` commun (fond plein écran, clavier, marge au-dessus de la barre de navigation Android). Les boutons Dupliquer / Supprimer sont dans `SheetActions` (48 px, icône, surbrillance).
+
+### Widget Android
+
+- Nom : **Listana · Reprendre**. À poser depuis le sélecteur de widgets du téléphone.
+- Liste les œuvres en cours (1 à 4 lignes selon la hauteur). État vide : « Rien en cours pour l'instant ».
+- Un appui sur **Reprendre** ouvre l'accueil. Un appui sur une ligne ouvre l'écran de ce média.
+- Thème clair / sombre selon le téléphone. Couleurs d'état identiques à l'app.
+- Se met à jour au retour sur l'accueil, quand on quitte l'app, au redimensionnement, et toutes les 30 minutes.
+- Android seulement, sur un **build natif** (EAS / `npx expo run:android`). Invisible dans Expo Go et sur le web.
 
 ## Où sont enregistrées les données
 
@@ -124,6 +133,7 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 - `BottomSheet` commun à toutes les fenêtres (fond plein écran, clavier, barre Android).
 - Boutons Dupliquer / Supprimer via `SheetActions`.
 - Barre « Filtrer ma liste » et puces d'état colorées.
+- Widget Android **Listana · Reprendre** (écran d'accueil).
 
 **Données**
 
@@ -140,7 +150,6 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 
 ## Ensuite
 
-- **Widget Android** : capture rapide, puis « Reprendre ».
 - Autres sources seulement après vérification des conditions (app concurrente, usage commercial, images, CORS).
 - Gestes sur les cartes, retours haptiques.
 
