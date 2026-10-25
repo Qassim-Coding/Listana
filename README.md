@@ -32,13 +32,17 @@ Listana regroupe au même endroit ce que vous regardez, lisez, jouez et écoutez
 - **Animés** : animé ou film/OAV, +1 épisode, statuts automatiques. Recherche TMDB.
 - **Séries TV** : saisons et épisodes, +1 avec passage de saison. Recherche TMDB.
 - **Films** : minutes, note /5, avis. Recherche TMDB.
-- **Livres** : pages optionnelles, statut calculé à partir de la page. Recherche Open Library. Le crayon de page reste disponible si le livre est marqué terminé (pour corriger une erreur).
+- **Livres** : pages optionnelles, statut calculé à partir de la page. Recherche Open Library. On peut encore changer la page après « Terminé », et marquer un livre « Abandonné » (il quitte « En cours » sans perdre la page).
 - **Mangas** : tome ou chapitre, +1 / +5 / +10. Recherche MyAnimeList (API officielle).
 - **Jeux vidéo** : plateforme, genre, « où j'en suis ». Recherche RAWG.
 - **Podcasts et livres audio** : filtre par type, +1. Recherche Apple (iTunes). Lien « Écouter sur Apple Podcasts / Books » à côté de la pochette.
 - **Bloc-notes** : libre, liste à cocher, ou liée à une œuvre, avec repères.
 
-Partout : recherche, filtres avec compteurs, tri, modification, duplication (selon le média), suppression avec confirmation.
+Partout : barre « Filtrer ma liste », filtres d'état colorés, tri, modification, duplication (selon le média), suppression avec confirmation.
+
+Les cartes et les puces de filtre partagent 4 couleurs d'état : bleu (en cours), orange (à voir / lire / jouer / écouter), vert (terminé), rouge (abandonné).
+
+Les fenêtres d'ajout et de modification utilisent un `BottomSheet` commun (fond plein écran, clavier, marge au-dessus de la barre de navigation Android). Les boutons Dupliquer / Supprimer sont dans `SheetActions` (48 px, icône, surbrillance).
 
 ## Où sont enregistrées les données
 
@@ -98,7 +102,8 @@ npm run preview:web
 
 - Thème clair / sombre : `src/theme.ts`, `src/ThemeContext.tsx`.
 - Une couleur par média. Poppins 400 / 600 / 700. Ionicons.
-- Zones tactiles ≥ 44 px.
+- Couleurs d'état partagées : `src/constants/statusColors.ts`.
+- Zones tactiles ≥ 44 px (boutons d'action des fenêtres : 48 px).
 - Icône : quatre tuiles sur fond `#0E1733`. Splash : `#F4F5F8` / `#0B0C10`.
 
 ## Pile technique
@@ -116,6 +121,9 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 
 - Thème clair / sombre, taille de texte, accueil « Reprendre ».
 - Nouvelle icône / favicon. Mention Listana V2.0 en bas de l'accueil.
+- `BottomSheet` commun à toutes les fenêtres (fond plein écran, clavier, barre Android).
+- Boutons Dupliquer / Supprimer via `SheetActions`.
+- Barre « Filtrer ma liste » et puces d'état colorées.
 
 **Données**
 
@@ -127,14 +135,14 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 **Corrections**
 
 - Livres : on peut encore changer la page (et donc le statut) après « Terminé ».
+- Livres : statut « Abandonné » (le livre quitte « En cours », la page est conservée).
 - Mangas, jeux, podcasts persistés. +1 épisode, saisons, filtres, suppression, retour web.
 
 ## Ensuite
 
 - **Widget Android** : capture rapide, puis « Reprendre ».
-- **V2.1** : un composant commun `BottomSheet` pour toutes les fenêtres d'ajout (fond plein écran, clavier, marge au-dessus de la barre de navigation Android), boutons supprimer plus visibles, surbrillances, barre « Filtrer ma liste ».
 - Autres sources seulement après vérification des conditions (app concurrente, usage commercial, images, CORS).
-- Gestes sur les cartes, haptique.
+- Gestes sur les cartes, retours haptiques.
 
 ---
 

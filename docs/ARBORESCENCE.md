@@ -46,6 +46,8 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- mal.ts                      # Mangas (API officielle MyAnimeList)
 |   |   |-- itunes.ts                   # Podcasts et livres audio (Apple, sans clé)
 |   |-- components/
+|   |   |-- BottomSheet.tsx             # Fenêtre du bas commune (fond plein écran, clavier, barre Android)
+|   |   |-- SheetActions.tsx            # Boutons Dupliquer / Supprimer (48 px, surbrillance)
 |   |   |-- MediaCard.tsx
 |   |   |-- MediaGrid.tsx
 |   |   |-- ResumeSection.tsx           # Section « Reprendre » de l'accueil
@@ -61,7 +63,7 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- MovieFormModal.tsx          # Recherche TMDB, note /5
 |   |   |-- BookCard.tsx                # Crayon de page aussi sur un livre terminé
 |   |   |-- AddBookModal.tsx            # Recherche Open Library
-|   |   |-- UpdateBookPageModal.tsx     # Page atteinte ; « Terminé » masqué si déjà terminé
+|   |   |-- UpdateBookPageModal.tsx     # Page, « Terminé », « Abandonné »
 |   |   |-- MangaCard.tsx
 |   |   |-- EditMangaModal.tsx          # Recherche MyAnimeList
 |   |   |-- UpdateMangaProgressModal.tsx
@@ -75,11 +77,12 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |-- constants/
 |   |   |-- media.ts                    # Clés et libellés des catégories
 |   |   |-- version.ts                  # APP_VERSION / APP_VERSION_LABEL depuis app.json
+|   |   |-- statusColors.ts             # 4 familles d'états (en cours, prévu, terminé, abandonné)
 |   |-- hooks/
 |   |   |-- useStorage.ts               # MMKV si disponible, sinon AsyncStorage
 |   |   |-- useResumeItems.ts
 |   |   |-- useAnimes.ts
-|   |   |-- useBooks.ts                 # Statut dérivé de la page atteinte
+|   |   |-- useBooks.ts                 # Statut dérivé de la page ; markAbandoned
 |   |   |-- useMovies.ts
 |   |   |-- useTVShows.ts
 |   |-- screens/
@@ -114,8 +117,11 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 - **Deux formes d'écran** : `movies.tsx` et `books.tsx` sont complets. Les autres routes sont des ponts vers `src/screens` (en-tête natif sur mobile, `WebBackButton` sur le web).
 - **Thème** : `useTheme()` + `makeStyles(t)`. En-têtes : `makeHeaderOptions(t)`. Taille du texte : `t.fs(n)`.
 - **Version** : une seule source, `expo.version` dans `app.json` (`2.0.0`). `src/constants/version.ts` affiche **Listana V2.0** en bas de l'accueil.
+- **Fenêtres** : tous les formulaires d'ajout, de modification et de progression passent par `BottomSheet` (fond sombre plein écran, remonte avec le clavier, marge au-dessus de la barre de navigation Android). Les boutons Dupliquer / Supprimer sont dans `SheetActions` (48 px, icône, surbrillance).
+- **États** : `statusColors.ts` range tous les statuts média dans 4 familles (en cours = bleu, prévu = orange, terminé = vert, abandonné = rouge). Les cartes et les puces de filtre utilisent ces couleurs.
+- **Listes** : barre « Filtrer ma liste » sur chaque écran média (notes : « Chercher dans mes notes »).
 - **Notes** : `free`, `list`, `work`. Une note `work` se lie à une œuvre via `libraryWorks.ts` et peut porter des `NoteMark`.
-- **Livres** : le statut (`planning` / `in_progress` / `done`) est recalculé à partir de la page. Le crayon de mise à jour reste visible après « Terminé », pour pouvoir redescendre la page (ex. page 20) et repasser en cours.
+- **Livres** : le statut (`planning` / `in_progress` / `done`) est recalculé à partir de la page, sauf `abandoned` (choisi à la main). Le crayon de mise à jour reste visible après « Terminé » ou « Abandonné » : enregistrer une page remet le livre « En cours ».
 
 ## Intégrations API
 

@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "homepage": "https://qassim-coding.github.io/Listana",
   "private": true,
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -36,6 +36,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.4",
+    "react-native-android-widget": "^0.24.0",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-mmkv": "2.6.3",
     "react-native-reanimated": "~4.1.1",
