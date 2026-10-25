@@ -1,11 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { NoteKind, NoteWork } from "../types/note";
 import { LibraryWork, WORK_LABEL, loadLibraryWorks, workColor } from "../utils/libraryWorks";
+import BottomSheet from "./BottomSheet";
 
 type Props = {
   visible: boolean;
@@ -18,7 +18,6 @@ type Props = {
 export default function NewNoteSheet({ visible, onClose, onPick, worksOnly = false }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const insets = useSafeAreaInsets();
   const [works, setWorks] = useState<LibraryWork[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
@@ -52,127 +51,109 @@ export default function NewNoteSheet({ visible, onClose, onPick, worksOnly = fal
   const listColor = t.accent;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable style={styles.dismiss} onPress={onClose} accessibilityLabel="Fermer" />
-        <View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }]}>
-          <View style={styles.handle} />
-          <View style={styles.headRow}>
-            <Text style={styles.heading}>{worksOnly ? "Choisir une œuvre" : "Nouvelle note"}</Text>
-            <Pressable onPress={onClose} accessibilityRole="button" style={styles.cancelBtn}>
-              <Text style={styles.cancel}>Annuler</Text>
+    <BottomSheet visible={visible} onClose={onClose} dismissOnBackdrop>
+      <View style={styles.headRow}>
+        <Text style={styles.heading}>{worksOnly ? "Choisir une œuvre" : "Nouvelle note"}</Text>
+        <Pressable onPress={onClose} accessibilityRole="button" style={styles.cancelBtn}>
+          <Text style={styles.cancel}>Annuler</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.list}>
+        {!worksOnly && (
+          <>
+            <Pressable onPress={() => onPick("free")} accessibilityRole="button" style={styles.typeBtn}>
+              <View style={[styles.typeIcon, { backgroundColor: t.media.notes + "24" }]}>
+                <Text style={[styles.typeIconText, { color: t.media.notes }]}>Aa</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.typeTitle}>Note libre</Text>
+                <Text style={styles.typeSub}>Idées, pensées, brouillons</Text>
+              </View>
             </Pressable>
+
+            <Pressable onPress={() => onPick("list")} accessibilityRole="button" style={styles.typeBtn}>
+              <View style={[styles.typeIcon, { backgroundColor: listColor + "24" }]}>
+                <Ionicons name="checkbox-outline" size={20} color={t.scheme === "dark" ? listColor : t.text} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.typeTitle}>Liste à cocher</Text>
+                <Text style={styles.typeSub}>Courses, à faire, valise…</Text>
+              </View>
+            </Pressable>
+          </>
+        )}
+
+        <View style={[styles.workBox, !worksOnly && { borderColor: t.accent }]}>
+          {!worksOnly && (
+            <View style={styles.workHead}>
+              <View style={[styles.typeIcon, { backgroundColor: listColor + "24" }]}>
+                <Ionicons name="link-outline" size={20} color={t.scheme === "dark" ? listColor : t.text} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.typeTitle}>Note sur une œuvre</Text>
+                <Text style={styles.typeSub}>Liée à un livre, un manga, un épisode…</Text>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.search}>
+            <Ionicons name="search-outline" size={16} color={t.textMuted} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Chercher dans ma bibliothèque"
+              placeholderTextColor={t.textMuted}
+              accessibilityLabel="Chercher dans ma bibliothèque"
+              autoCorrect={false}
+              style={styles.searchInput}
+            />
           </View>
 
-          <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ gap: 8 }}>
-            {!worksOnly && (
-              <>
-                <Pressable onPress={() => onPick("free")} accessibilityRole="button" style={styles.typeBtn}>
-                  <View style={[styles.typeIcon, { backgroundColor: t.media.notes + "24" }]}>
-                    <Text style={[styles.typeIconText, { color: t.media.notes }]}>Aa</Text>
+          <Text style={styles.section}>{q ? "RÉSULTATS" : "EN COURS"}</Text>
+
+          {loading ? (
+            <ActivityIndicator color={t.accent} style={{ marginVertical: 12 }} />
+          ) : shown.length === 0 ? (
+            <Text style={styles.empty}>
+              {q ? "Aucune œuvre trouvée." : "Rien en cours. Cherche une œuvre par son titre."}
+            </Text>
+          ) : (
+            shown.map((w) => {
+              const c = workColor(t, w.key);
+              return (
+                <Pressable
+                  key={`${w.key}-${w.id}`}
+                  onPress={() => pickWork(w)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${w.title}, ${WORK_LABEL[w.key]}`}
+                  style={({ pressed }) => [styles.workRow, pressed && { backgroundColor: t.cardAlt }]}
+                >
+                  <View style={[styles.avatar, { backgroundColor: c + "38" }]}>
+                    <Text style={[styles.avatarText, { color: c }]}>{w.title.trim().charAt(0).toUpperCase()}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.typeTitle}>Note libre</Text>
-                    <Text style={styles.typeSub}>Idées, pensées, brouillons</Text>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.workTitle} numberOfLines={1}>
+                      {w.title}
+                    </Text>
+                    <Text style={[styles.workMeta, { color: c }]} numberOfLines={1}>
+                      {WORK_LABEL[w.key]} · {w.meta}
+                    </Text>
                   </View>
                 </Pressable>
-
-                <Pressable onPress={() => onPick("list")} accessibilityRole="button" style={styles.typeBtn}>
-                  <View style={[styles.typeIcon, { backgroundColor: listColor + "24" }]}>
-                    <Ionicons name="checkbox-outline" size={20} color={t.scheme === "dark" ? listColor : t.text} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.typeTitle}>Liste à cocher</Text>
-                    <Text style={styles.typeSub}>Courses, à faire, valise…</Text>
-                  </View>
-                </Pressable>
-              </>
-            )}
-
-            <View style={[styles.workBox, !worksOnly && { borderColor: t.accent }]}>
-              {!worksOnly && (
-                <View style={styles.workHead}>
-                  <View style={[styles.typeIcon, { backgroundColor: listColor + "24" }]}>
-                    <Ionicons name="link-outline" size={20} color={t.scheme === "dark" ? listColor : t.text} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.typeTitle}>Note sur une œuvre</Text>
-                    <Text style={styles.typeSub}>Liée à un livre, un manga, un épisode…</Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={styles.search}>
-                <Ionicons name="search-outline" size={16} color={t.textMuted} />
-                <TextInput
-                  value={query}
-                  onChangeText={setQuery}
-                  placeholder="Chercher dans ma bibliothèque"
-                  placeholderTextColor={t.textMuted}
-                  accessibilityLabel="Chercher dans ma bibliothèque"
-                  autoCorrect={false}
-                  style={styles.searchInput}
-                />
-              </View>
-
-              <Text style={styles.section}>{q ? "RÉSULTATS" : "EN COURS"}</Text>
-
-              {loading ? (
-                <ActivityIndicator color={t.accent} style={{ marginVertical: 12 }} />
-              ) : shown.length === 0 ? (
-                <Text style={styles.empty}>
-                  {q ? "Aucune œuvre trouvée." : "Rien en cours. Cherche une œuvre par son titre."}
-                </Text>
-              ) : (
-                shown.map((w) => {
-                  const c = workColor(t, w.key);
-                  return (
-                    <Pressable
-                      key={`${w.key}-${w.id}`}
-                      onPress={() => pickWork(w)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${w.title}, ${WORK_LABEL[w.key]}`}
-                      style={({ pressed }) => [styles.workRow, pressed && { backgroundColor: t.cardAlt }]}
-                    >
-                      <View style={[styles.avatar, { backgroundColor: c + "38" }]}>
-                        <Text style={[styles.avatarText, { color: c }]}>{w.title.trim().charAt(0).toUpperCase()}</Text>
-                      </View>
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={styles.workTitle} numberOfLines={1}>
-                          {w.title}
-                        </Text>
-                        <Text style={[styles.workMeta, { color: c }]} numberOfLines={1}>
-                          {WORK_LABEL[w.key]} · {w.meta}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
-          </ScrollView>
+              );
+            })
+          )}
         </View>
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
-    dismiss: { flex: 1 },
-    sheet: {
-      maxHeight: "88%",
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      paddingHorizontal: 20,
-      paddingTop: 10,
-    },
-    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border },
-    headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 44, marginTop: 10, marginBottom: 12 },
+    headRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", minHeight: 44, marginBottom: 12 },
+    list: { gap: 8 },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(22), color: t.text },
     cancelBtn: { minHeight: 44, justifyContent: "center" },
     cancel: { fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.textMuted },

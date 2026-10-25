@@ -1,17 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
+import BottomSheet from "./BottomSheet";
 
 type Props = {
   visible: boolean;
@@ -57,105 +49,85 @@ export default function ProgressUpdateModal({
   const setN = (x: number) => setValue(String(Math.max(0, total ? Math.min(x, total) : x)));
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Mettre à jour</Text>
-            <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
-              <Text style={styles.cancel}>Annuler</Text>
-            </Pressable>
-          </View>
+    <BottomSheet visible onClose={onClose}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Mettre à jour</Text>
+        <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
+          <Text style={styles.cancel}>Annuler</Text>
+        </Pressable>
+      </View>
 
-          <Text style={styles.itemTitle} numberOfLines={1}>
-            {itemTitle}
-          </Text>
-          <Text style={styles.current}>{currentLabel}</Text>
+      <Text style={styles.itemTitle} numberOfLines={1}>
+        {itemTitle}
+      </Text>
+      <Text style={styles.current}>{currentLabel}</Text>
 
-          <View style={styles.counterBox}>
-            <Text style={styles.counterLabel}>{inputLabel}</Text>
-            <View style={styles.counterRow}>
-              <Pressable onPress={() => setN(n - 1)} accessibilityRole="button" accessibilityLabel="Retirer un" style={styles.roundBtn}>
-                <Ionicons name="remove" size={22} color={t.text} />
-              </Pressable>
-              <TextInput
-                value={value}
-                onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
-                keyboardType="number-pad"
-                accessibilityLabel={inputLabel}
-                style={styles.counterInput}
-              />
-              <Pressable onPress={() => setN(n + 1)} accessibilityRole="button" accessibilityLabel="Ajouter un" style={styles.roundBtn}>
-                <Ionicons name="add" size={22} color={t.text} />
-              </Pressable>
-            </View>
-            <View style={styles.quickRow}>
-              {quick.map((q) => (
-                <Pressable key={q} onPress={() => setN(n + q)} accessibilityRole="button" style={styles.quickBtn}>
-                  <Text style={styles.quickText}>+{q}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            {delta !== 0 ? (
-              <View style={styles.deltaBadge}>
-                <Text style={styles.deltaText}>
-                  {delta > 0 ? "+" : ""}
-                  {delta} {unit(delta)}
-                </Text>
-              </View>
-            ) : (
-              <View />
-            )}
-            {pct !== null && <Text style={styles.pct}>{pct} %</Text>}
-          </View>
-
-          <Pressable
-            onPress={() => {
-              onSave(n);
-              onClose();
-            }}
-            accessibilityRole="button"
-            style={styles.saveBtn}
-          >
-            <Text style={styles.saveText}>Enregistrer</Text>
+      <View style={styles.counterBox}>
+        <Text style={styles.counterLabel}>{inputLabel}</Text>
+        <View style={styles.counterRow}>
+          <Pressable onPress={() => setN(n - 1)} accessibilityRole="button" accessibilityLabel="Retirer un" style={styles.roundBtn}>
+            <Ionicons name="remove" size={22} color={t.text} />
           </Pressable>
-          <Pressable
-            onPress={() => {
-              onMarkDone();
-              onClose();
-            }}
-            accessibilityRole="button"
-            style={styles.doneBtn}
-          >
-            <Text style={styles.doneText}>Marquer comme terminé</Text>
+          <TextInput
+            value={value}
+            onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
+            keyboardType="number-pad"
+            accessibilityLabel={inputLabel}
+            style={styles.counterInput}
+          />
+          <Pressable onPress={() => setN(n + 1)} accessibilityRole="button" accessibilityLabel="Ajouter un" style={styles.roundBtn}>
+            <Ionicons name="add" size={22} color={t.text} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        <View style={styles.quickRow}>
+          {quick.map((q) => (
+            <Pressable key={q} onPress={() => setN(n + q)} accessibilityRole="button" style={styles.quickBtn}>
+              <Text style={styles.quickText}>+{q}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.infoRow}>
+        {delta !== 0 ? (
+          <View style={styles.deltaBadge}>
+            <Text style={styles.deltaText}>
+              {delta > 0 ? "+" : ""}
+              {delta} {unit(delta)}
+            </Text>
+          </View>
+        ) : (
+          <View />
+        )}
+        {pct !== null && <Text style={styles.pct}>{pct} %</Text>}
+      </View>
+
+      <Pressable
+        onPress={() => {
+          onSave(n);
+          onClose();
+        }}
+        accessibilityRole="button"
+        style={styles.saveBtn}
+      >
+        <Text style={styles.saveText}>Enregistrer</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => {
+          onMarkDone();
+          onClose();
+        }}
+        accessibilityRole="button"
+        style={styles.doneBtn}
+      >
+        <Text style={styles.doneText}>Marquer comme terminé</Text>
+      </Pressable>
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.55)" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-      paddingBottom: 28,
-    },
-    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border, marginBottom: 12 },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(22), color: t.text },
     cancel: { fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.textMuted },

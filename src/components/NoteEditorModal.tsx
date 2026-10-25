@@ -2,8 +2,6 @@ import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -13,12 +11,12 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { newId } from "../storage/note.store";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { ChecklistItem, Note, NoteKind, NoteMark, NoteWork, noteKind } from "../types/note";
 import { WORK_LABEL, markPrefix, workColor } from "../utils/libraryWorks";
+import BottomSheet from "./BottomSheet";
 import NewNoteSheet from "./NewNoteSheet";
 
 type Props = {
@@ -34,7 +32,6 @@ type Props = {
 export default function NoteEditorModal({ visible, initial, draft, onClose, onSubmit, onDuplicate, onDelete }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
-  const insets = useSafeAreaInsets();
   const [kind, setKind] = useState<NoteKind>("free");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -202,17 +199,168 @@ export default function NoteEditorModal({ visible, initial, draft, onClose, onSu
   );
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={save}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={[styles.sheet, { marginTop: insets.top + 24, paddingBottom: 12 + insets.bottom }]}>
-          {header}
+    <BottomSheet visible={visible} onClose={save} fill>
+      {header}
 
-          {kind === "free" ? (
+      {kind === "free" ? (
+        <>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Titre"
+            placeholderTextColor={t.textMuted}
+            accessibilityLabel="Titre de la note"
+            style={styles.titleInput}
+          />
+          <TextInput
+            value={content}
+            onChangeText={setContent}
+            placeholder="Écris ici…"
+            placeholderTextColor={t.textMuted}
+            accessibilityLabel="Contenu de la note"
+            multiline
+            style={styles.contentInput}
+          />
+        </>
+      ) : (
+        <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
+          {kind === "list" && (
             <>
+              <View style={styles.badgeRow}>
+                <Text style={[styles.badge, { color: checkColor, backgroundColor: t.accent + "24" }]}>LISTE À COCHER</Text>
+                <Text style={styles.badgeMeta}>
+                  {done.length} sur {items.length} cochés
+                </Text>
+              </View>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Titre"
+                placeholder="Titre de la liste"
+                placeholderTextColor={t.textMuted}
+                accessibilityLabel="Titre de la liste"
+                style={styles.titleInput}
+              />
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${pct}%` }]} />
+              </View>
+
+              {todo.map((i) => (
+                <View key={i.id} style={styles.itemRow}>
+                  <Pressable
+                    onPress={() => toggleItem(i.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: false }}
+                    accessibilityLabel={`Cocher ${i.text}`}
+                    style={styles.checkHit}
+                  >
+                    <View style={styles.checkbox} />
+                  </Pressable>
+                  <TextInput
+                    value={i.text}
+                    onChangeText={(v) => editItem(i.id, v)}
+                    accessibilityLabel="Article"
+                    style={styles.itemInput}
+                  />
+                  <Pressable onPress={() => removeItem(i.id)} accessibilityRole="button" accessibilityLabel={`Retirer ${i.text}`} style={styles.iconBtn}>
+                    <Ionicons name="close" size={18} color={t.textMuted} />
+                  </Pressable>
+                </View>
+              ))}
+
+              <View style={styles.addRow}>
+                <Ionicons name="add" size={22} color={checkColor} />
+                <TextInput
+                  value={newItem}
+                  onChangeText={setNewItem}
+                  onSubmitEditing={addItem}
+                  blurOnSubmit={false}
+                  returnKeyType="done"
+                  placeholder="Ajouter un article"
+                  placeholderTextColor={t.textMuted}
+                  accessibilityLabel="Ajouter un article"
+                  style={styles.itemInput}
+                />
+                {newItem.trim() ? (
+                  <Pressable onPress={addItem} accessibilityRole="button" accessibilityLabel="Ajouter" style={styles.iconBtn}>
+                    <Ionicons name="return-down-back" size={20} color={checkColor} />
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {done.length > 0 && (
+                <>
+                  <Pressable onPress={() => setShowDone(!showDone)} accessibilityRole="button" style={styles.doneToggle}>
+                    <Ionicons name={showDone ? "chevron-down" : "chevron-forward"} size={16} color={t.textMuted} />
+                    <Text style={styles.doneToggleText}>Cochés ({done.length})</Text>
+                  </Pressable>
+                  {showDone &&
+                    done.map((i) => (
+                      <View key={i.id} style={styles.itemRow}>
+                        <Pressable
+                          onPress={() => toggleItem(i.id)}
+                          accessibilityRole="checkbox"
+                          accessibilityState={{ checked: true }}
+                          accessibilityLabel={`Décocher ${i.text}`}
+                          style={styles.checkHit}
+                        >
+                          <View style={[styles.checkbox, styles.checkboxOn]}>
+                            <Ionicons name="checkmark" size={14} color={t.text} />
+                          </View>
+                        </Pressable>
+                        <Text style={styles.doneText} numberOfLines={2}>
+                          {i.text}
+                        </Text>
+                        <Pressable onPress={() => removeItem(i.id)} accessibilityRole="button" accessibilityLabel={`Retirer ${i.text}`} style={styles.iconBtn}>
+                          <Ionicons name="close" size={18} color={t.textMuted} />
+                        </Pressable>
+                      </View>
+                    ))}
+                </>
+              )}
+
+              {items.length > 0 && (
+                <View style={styles.listActions}>
+                  <Pressable onPress={uncheckAll} accessibilityRole="button" style={styles.pillBtn}>
+                    <Text style={styles.pillText}>Tout décocher</Text>
+                  </Pressable>
+                  <Pressable onPress={shareList} accessibilityRole="button" style={styles.pillBtn}>
+                    <Text style={styles.pillText}>Partager</Text>
+                  </Pressable>
+                </View>
+              )}
+            </>
+          )}
+
+          {kind === "work" && (
+            <>
+              <View style={[styles.workBanner, { borderColor: wColor + "55", backgroundColor: wColor + "14" }]}>
+                <View style={[styles.avatar, { backgroundColor: wColor + "38" }]}>
+                  <Text style={[styles.avatarText, { color: wColor }]}>
+                    {(work?.title ?? "?").trim().charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.workLabel, { color: wColor }]}>
+                    NOTE LIÉE{work ? ` · ${WORK_LABEL[work.key].toUpperCase()}` : ""}
+                  </Text>
+                  <Text style={styles.workTitle} numberOfLines={1}>
+                    {work?.title ?? "Aucune œuvre"}
+                  </Text>
+                  {work?.meta ? (
+                    <Text style={styles.workMeta} numberOfLines={1}>
+                      {work.meta}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pressable onPress={() => setPickerVisible(true)} accessibilityRole="button" style={styles.changeBtn}>
+                  <Text style={styles.changeText}>Changer</Text>
+                </Pressable>
+              </View>
+
+              <TextInput
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Titre (ex. Le duel contre Inshun)"
                 placeholderTextColor={t.textMuted}
                 accessibilityLabel="Titre de la note"
                 style={styles.titleInput}
@@ -224,216 +372,61 @@ export default function NoteEditorModal({ visible, initial, draft, onClose, onSu
                 placeholderTextColor={t.textMuted}
                 accessibilityLabel="Contenu de la note"
                 multiline
-                style={styles.contentInput}
+                scrollEnabled={false}
+                style={[styles.contentInput, styles.contentInWork]}
               />
+
+              <Text style={styles.sectionLabel}>Repères</Text>
+              {marks.length === 0 && (
+                <Text style={styles.hint}>Note un passage précis : une page, un épisode, un minutage.</Text>
+              )}
+              {marks.map((m) => (
+                <View key={m.id} style={styles.markRow}>
+                  {m.label ? (
+                    <Text style={[styles.markChip, { color: wColor }]}>{m.label}</Text>
+                  ) : null}
+                  <Text style={styles.markText}>{m.text}</Text>
+                  <Pressable onPress={() => removeMark(m.id)} accessibilityRole="button" accessibilityLabel="Retirer le repère" style={styles.iconBtn}>
+                    <Ionicons name="close" size={18} color={t.textMuted} />
+                  </Pressable>
+                </View>
+              ))}
+
+              <View style={styles.markAdd}>
+                <TextInput
+                  value={markLabel}
+                  onChangeText={setMarkLabel}
+                  placeholder="p. 134"
+                  placeholderTextColor={t.textMuted}
+                  accessibilityLabel="Repère (page, épisode, minutage)"
+                  style={[styles.markInput, styles.markLabelInput]}
+                />
+                <TextInput
+                  value={markText}
+                  onChangeText={setMarkText}
+                  onSubmitEditing={addMark}
+                  blurOnSubmit={false}
+                  placeholder="Ce qui t’a marqué…"
+                  placeholderTextColor={t.textMuted}
+                  accessibilityLabel="Texte du repère"
+                  style={[styles.markInput, { flex: 1 }]}
+                />
+                <Pressable
+                  onPress={addMark}
+                  disabled={!markText.trim()}
+                  accessibilityRole="button"
+                  accessibilityLabel="Ajouter le repère"
+                  style={[styles.markAddBtn, !markText.trim() && { opacity: 0.4 }]}
+                >
+                  <Ionicons name="bookmark" size={18} color={t.onAccent} />
+                </Pressable>
+              </View>
             </>
-          ) : (
-            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 16 }}>
-              {kind === "list" && (
-                <>
-                  <View style={styles.badgeRow}>
-                    <Text style={[styles.badge, { color: checkColor, backgroundColor: t.accent + "24" }]}>LISTE À COCHER</Text>
-                    <Text style={styles.badgeMeta}>
-                      {done.length} sur {items.length} cochés
-                    </Text>
-                  </View>
-                  <TextInput
-                    value={title}
-                    onChangeText={setTitle}
-                    placeholder="Titre de la liste"
-                    placeholderTextColor={t.textMuted}
-                    accessibilityLabel="Titre de la liste"
-                    style={styles.titleInput}
-                  />
-                  <View style={styles.track}>
-                    <View style={[styles.fill, { width: `${pct}%` }]} />
-                  </View>
-
-                  {todo.map((i) => (
-                    <View key={i.id} style={styles.itemRow}>
-                      <Pressable
-                        onPress={() => toggleItem(i.id)}
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: false }}
-                        accessibilityLabel={`Cocher ${i.text}`}
-                        style={styles.checkHit}
-                      >
-                        <View style={styles.checkbox} />
-                      </Pressable>
-                      <TextInput
-                        value={i.text}
-                        onChangeText={(v) => editItem(i.id, v)}
-                        accessibilityLabel="Article"
-                        style={styles.itemInput}
-                      />
-                      <Pressable onPress={() => removeItem(i.id)} accessibilityRole="button" accessibilityLabel={`Retirer ${i.text}`} style={styles.iconBtn}>
-                        <Ionicons name="close" size={18} color={t.textMuted} />
-                      </Pressable>
-                    </View>
-                  ))}
-
-                  <View style={styles.addRow}>
-                    <Ionicons name="add" size={22} color={checkColor} />
-                    <TextInput
-                      value={newItem}
-                      onChangeText={setNewItem}
-                      onSubmitEditing={addItem}
-                      blurOnSubmit={false}
-                      returnKeyType="done"
-                      placeholder="Ajouter un article"
-                      placeholderTextColor={t.textMuted}
-                      accessibilityLabel="Ajouter un article"
-                      style={styles.itemInput}
-                    />
-                    {newItem.trim() ? (
-                      <Pressable onPress={addItem} accessibilityRole="button" accessibilityLabel="Ajouter" style={styles.iconBtn}>
-                        <Ionicons name="return-down-back" size={20} color={checkColor} />
-                      </Pressable>
-                    ) : null}
-                  </View>
-
-                  {done.length > 0 && (
-                    <>
-                      <Pressable onPress={() => setShowDone(!showDone)} accessibilityRole="button" style={styles.doneToggle}>
-                        <Ionicons name={showDone ? "chevron-down" : "chevron-forward"} size={16} color={t.textMuted} />
-                        <Text style={styles.doneToggleText}>Cochés ({done.length})</Text>
-                      </Pressable>
-                      {showDone &&
-                        done.map((i) => (
-                          <View key={i.id} style={styles.itemRow}>
-                            <Pressable
-                              onPress={() => toggleItem(i.id)}
-                              accessibilityRole="checkbox"
-                              accessibilityState={{ checked: true }}
-                              accessibilityLabel={`Décocher ${i.text}`}
-                              style={styles.checkHit}
-                            >
-                              <View style={[styles.checkbox, styles.checkboxOn]}>
-                                <Ionicons name="checkmark" size={14} color={t.text} />
-                              </View>
-                            </Pressable>
-                            <Text style={styles.doneText} numberOfLines={2}>
-                              {i.text}
-                            </Text>
-                            <Pressable onPress={() => removeItem(i.id)} accessibilityRole="button" accessibilityLabel={`Retirer ${i.text}`} style={styles.iconBtn}>
-                              <Ionicons name="close" size={18} color={t.textMuted} />
-                            </Pressable>
-                          </View>
-                        ))}
-                    </>
-                  )}
-
-                  {items.length > 0 && (
-                    <View style={styles.listActions}>
-                      <Pressable onPress={uncheckAll} accessibilityRole="button" style={styles.pillBtn}>
-                        <Text style={styles.pillText}>Tout décocher</Text>
-                      </Pressable>
-                      <Pressable onPress={shareList} accessibilityRole="button" style={styles.pillBtn}>
-                        <Text style={styles.pillText}>Partager</Text>
-                      </Pressable>
-                    </View>
-                  )}
-                </>
-              )}
-
-              {kind === "work" && (
-                <>
-                  <View style={[styles.workBanner, { borderColor: wColor + "55", backgroundColor: wColor + "14" }]}>
-                    <View style={[styles.avatar, { backgroundColor: wColor + "38" }]}>
-                      <Text style={[styles.avatarText, { color: wColor }]}>
-                        {(work?.title ?? "?").trim().charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={[styles.workLabel, { color: wColor }]}>
-                        NOTE LIÉE{work ? ` · ${WORK_LABEL[work.key].toUpperCase()}` : ""}
-                      </Text>
-                      <Text style={styles.workTitle} numberOfLines={1}>
-                        {work?.title ?? "Aucune œuvre"}
-                      </Text>
-                      {work?.meta ? (
-                        <Text style={styles.workMeta} numberOfLines={1}>
-                          {work.meta}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <Pressable onPress={() => setPickerVisible(true)} accessibilityRole="button" style={styles.changeBtn}>
-                      <Text style={styles.changeText}>Changer</Text>
-                    </Pressable>
-                  </View>
-
-                  <TextInput
-                    value={title}
-                    onChangeText={setTitle}
-                    placeholder="Titre (ex. Le duel contre Inshun)"
-                    placeholderTextColor={t.textMuted}
-                    accessibilityLabel="Titre de la note"
-                    style={styles.titleInput}
-                  />
-                  <TextInput
-                    value={content}
-                    onChangeText={setContent}
-                    placeholder="Écris ici…"
-                    placeholderTextColor={t.textMuted}
-                    accessibilityLabel="Contenu de la note"
-                    multiline
-                    scrollEnabled={false}
-                    style={[styles.contentInput, styles.contentInWork]}
-                  />
-
-                  <Text style={styles.sectionLabel}>Repères</Text>
-                  {marks.length === 0 && (
-                    <Text style={styles.hint}>Note un passage précis : une page, un épisode, un minutage.</Text>
-                  )}
-                  {marks.map((m) => (
-                    <View key={m.id} style={styles.markRow}>
-                      {m.label ? (
-                        <Text style={[styles.markChip, { color: wColor }]}>{m.label}</Text>
-                      ) : null}
-                      <Text style={styles.markText}>{m.text}</Text>
-                      <Pressable onPress={() => removeMark(m.id)} accessibilityRole="button" accessibilityLabel="Retirer le repère" style={styles.iconBtn}>
-                        <Ionicons name="close" size={18} color={t.textMuted} />
-                      </Pressable>
-                    </View>
-                  ))}
-
-                  <View style={styles.markAdd}>
-                    <TextInput
-                      value={markLabel}
-                      onChangeText={setMarkLabel}
-                      placeholder="p. 134"
-                      placeholderTextColor={t.textMuted}
-                      accessibilityLabel="Repère (page, épisode, minutage)"
-                      style={[styles.markInput, styles.markLabelInput]}
-                    />
-                    <TextInput
-                      value={markText}
-                      onChangeText={setMarkText}
-                      onSubmitEditing={addMark}
-                      blurOnSubmit={false}
-                      placeholder="Ce qui t’a marqué…"
-                      placeholderTextColor={t.textMuted}
-                      accessibilityLabel="Texte du repère"
-                      style={[styles.markInput, { flex: 1 }]}
-                    />
-                    <Pressable
-                      onPress={addMark}
-                      disabled={!markText.trim()}
-                      accessibilityRole="button"
-                      accessibilityLabel="Ajouter le repère"
-                      style={[styles.markAddBtn, !markText.trim() && { opacity: 0.4 }]}
-                    >
-                      <Ionicons name="bookmark" size={18} color={t.onAccent} />
-                    </Pressable>
-                  </View>
-                </>
-              )}
-            </ScrollView>
           )}
+        </ScrollView>
+      )}
 
-          {footer}
-        </View>
-      </KeyboardAvoidingView>
+      {footer}
 
       {kind === "work" && (
         <NewNoteSheet
@@ -449,23 +442,12 @@ export default function NoteEditorModal({ visible, initial, draft, onClose, onSu
           }}
         />
       )}
-    </Modal>
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    sheet: {
-      flex: 1,
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      paddingHorizontal: 20,
-      paddingTop: 12,
-    },
     topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     topBtn: { minHeight: 44, justifyContent: "center" },
     cancel: { fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.textMuted },

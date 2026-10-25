@@ -1,27 +1,21 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
+import { statusColors } from "../constants/statusColors";
 import { Book } from "../types/book";
+import BottomSheet from "./BottomSheet";
 
 type Props = {
   book: Book | null;
   onClose: () => void;
   onSave: (page: number) => void;
   onMarkDone: () => void;
+  onMarkAbandoned: () => void;
 };
 
-export default function UpdateBookPageModal({ book, onClose, onSave, onMarkDone }: Props) {
+export default function UpdateBookPageModal({ book, onClose, onSave, onMarkDone, onMarkAbandoned }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const [value, setValue] = useState("0");
@@ -39,129 +33,133 @@ export default function UpdateBookPageModal({ book, onClose, onSave, onMarkDone 
   const delta = n - start;
   const pct = total ? Math.round((n / total) * 100) : null;
   const setN = (x: number) => setValue(String(Math.max(0, total ? Math.min(x, total) : x)));
+  const doneTone = statusColors(t, "done");
+  const droppedTone = statusColors(t, "abandoned");
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Mettre à jour</Text>
-            <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
-              <Text style={styles.cancel}>Annuler</Text>
+    <BottomSheet visible onClose={onClose}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Mettre à jour</Text>
+        <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
+          <Text style={styles.cancel}>Annuler</Text>
+        </Pressable>
+      </View>
+
+      <Text style={styles.bookTitle} numberOfLines={1}>
+        {book.title}
+      </Text>
+      <Text style={styles.current}>
+        Actuellement : page {start}
+        {total ? ` / ${total}` : ""}
+      </Text>
+      {book.status === "abandoned" && (
+        <Text style={styles.abandonedNote}>Livre abandonné : enregistre une page pour reprendre la lecture.</Text>
+      )}
+
+      <View style={styles.counterBox}>
+        <Text style={styles.counterLabel}>Je suis maintenant à la page</Text>
+        <View style={styles.counterRow}>
+          <Pressable
+            onPress={() => setN(n - 1)}
+            accessibilityRole="button"
+            accessibilityLabel="Retirer une page"
+            style={styles.roundBtn}
+          >
+            <Ionicons name="remove" size={22} color={t.text} />
+          </Pressable>
+          <TextInput
+            value={value}
+            onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
+            keyboardType="number-pad"
+            accessibilityLabel="Page atteinte"
+            style={styles.counterInput}
+          />
+          <Pressable
+            onPress={() => setN(n + 1)}
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter une page"
+            style={styles.roundBtn}
+          >
+            <Ionicons name="add" size={22} color={t.text} />
+          </Pressable>
+        </View>
+        <View style={styles.quickRow}>
+          {[10, 25, 50].map((q) => (
+            <Pressable key={q} onPress={() => setN(n + q)} accessibilityRole="button" style={styles.quickBtn}>
+              <Text style={styles.quickText}>+{q}</Text>
             </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.infoRow}>
+        {delta !== 0 ? (
+          <View style={styles.deltaBadge}>
+            <Text style={styles.deltaText}>
+              {delta > 0 ? "+" : ""}
+              {delta} page{Math.abs(delta) > 1 ? "s" : ""}
+            </Text>
           </View>
+        ) : (
+          <View />
+        )}
+        {pct !== null && <Text style={styles.pct}>{pct} % lu</Text>}
+      </View>
 
-          <Text style={styles.bookTitle} numberOfLines={1}>
-            {book.title}
-          </Text>
-          <Text style={styles.current}>
-            Actuellement : page {start}
-            {total ? ` / ${total}` : ""}
-          </Text>
+      <Pressable
+        onPress={() => {
+          onSave(n);
+          onClose();
+        }}
+        accessibilityRole="button"
+        style={styles.saveBtn}
+      >
+        <Text style={styles.saveText}>Enregistrer</Text>
+      </Pressable>
 
-          <View style={styles.counterBox}>
-            <Text style={styles.counterLabel}>Je suis maintenant à la page</Text>
-            <View style={styles.counterRow}>
-              <Pressable
-                onPress={() => setN(n - 1)}
-                accessibilityRole="button"
-                accessibilityLabel="Retirer une page"
-                style={styles.roundBtn}
-              >
-                <Ionicons name="remove" size={22} color={t.text} />
-              </Pressable>
-              <TextInput
-                value={value}
-                onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
-                keyboardType="number-pad"
-                accessibilityLabel="Page atteinte"
-                style={styles.counterInput}
-              />
-              <Pressable
-                onPress={() => setN(n + 1)}
-                accessibilityRole="button"
-                accessibilityLabel="Ajouter une page"
-                style={styles.roundBtn}
-              >
-                <Ionicons name="add" size={22} color={t.text} />
-              </Pressable>
-            </View>
-            <View style={styles.quickRow}>
-              {[10, 25, 50].map((q) => (
-                <Pressable key={q} onPress={() => setN(n + q)} accessibilityRole="button" style={styles.quickBtn}>
-                  <Text style={styles.quickText}>+{q}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            {delta !== 0 ? (
-              <View style={styles.deltaBadge}>
-                <Text style={styles.deltaText}>
-                  {delta > 0 ? "+" : ""}
-                  {delta} page{Math.abs(delta) > 1 ? "s" : ""}
-                </Text>
-              </View>
-            ) : (
-              <View />
-            )}
-            {pct !== null && <Text style={styles.pct}>{pct} % lu</Text>}
-          </View>
-
+      {/* Terminé (vert) et Abandonner (rouge) : les mêmes couleurs que les états dans les listes */}
+      {book.status !== "done" && (
+        <View style={styles.stateRow}>
           <Pressable
             onPress={() => {
-              onSave(n);
+              onMarkDone();
               onClose();
             }}
             accessibilityRole="button"
-            style={styles.saveBtn}
+            style={({ pressed }: { pressed: boolean }) => [
+              styles.stateBtn,
+              { borderColor: doneTone?.chipBorder },
+              pressed && { backgroundColor: doneTone?.chipBg },
+            ]}
           >
-            <Text style={styles.saveText}>Enregistrer</Text>
+            <Ionicons name="checkmark-circle-outline" size={18} color={doneTone?.base} />
+            <Text style={styles.stateText}>Terminé</Text>
           </Pressable>
-          {book.status !== "done" && (
+          {book.status !== "abandoned" && (
             <Pressable
               onPress={() => {
-                onMarkDone();
+                onMarkAbandoned();
                 onClose();
               }}
               accessibilityRole="button"
-              style={styles.doneBtn}
+              style={({ pressed }: { pressed: boolean }) => [
+                styles.stateBtn,
+                { borderColor: droppedTone?.chipBorder },
+                pressed && { backgroundColor: droppedTone?.chipBg },
+              ]}
             >
-              <Text style={styles.doneText}>Marquer comme terminé</Text>
+              <Ionicons name="close-circle-outline" size={18} color={droppedTone?.base} />
+              <Text style={styles.stateText}>Abandonner</Text>
             </Pressable>
           )}
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      )}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.55)" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-      paddingBottom: 28,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.border,
-      marginBottom: 12,
-    },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(22), color: t.text },
     cancel: { fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.textMuted },
@@ -210,7 +208,19 @@ function makeStyles(t: Theme) {
       justifyContent: "center",
     },
     saveText: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
-    doneBtn: { minHeight: 44, alignItems: "center", justifyContent: "center", marginTop: 6 },
-    doneText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14), color: t.textMuted },
+    stateRow: { flexDirection: "row", gap: 10, marginTop: 12 },
+    stateBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      minHeight: 48,
+      borderRadius: 24,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    stateText: { fontFamily: t.fonts.semibold, fontSize: t.fs(15), color: t.text },
+    abandonedNote: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted, marginTop: 8, fontStyle: "italic" },
   });
 }

@@ -1,19 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SearchResult, getMovieDetails, hasTmdbToken, searchMovies } from "../api/tmdb";
 import { MOVIE_STATUS_LABEL } from "../hooks/useMovies";
 import { Theme } from "../theme";
@@ -21,6 +8,8 @@ import { useTheme } from "../ThemeContext";
 import { Movie } from "../types/movie";
 import DateField from "./DateField";
 import MediaSearchField from "./MediaSearchField";
+import BottomSheet from "./BottomSheet";
+import SheetActions from "./SheetActions";
 
 type Status = Movie["status"];
 
@@ -150,201 +139,177 @@ export default function MovieFormModal({ visible, initial, onClose, onSubmit, on
     ]);
   }
 
-  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
   const starColor = "#FFB020";
   const color = t.media.movie;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.heading}>{initial ? "Modifier le film" : "Ajouter un film"}</Text>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.heading}>{initial ? "Modifier le film" : "Ajouter un film"}</Text>
 
-            {hasTmdbToken() && !tmdbId && (
-              <>
-                <Text style={styles.label}>{initial ? "Relier à TMDB" : "Rechercher un film"}</Text>
-                <MediaSearchField
-                  placeholder="Ex. Dune"
-                  search={searchMovies}
-                  onPick={handlePick}
-                  color={color}
-                  credit="Données et affiches : TMDB"
-                />
-              </>
-            )}
+      {hasTmdbToken() && !tmdbId && (
+        <>
+          <Text style={styles.label}>{initial ? "Relier à TMDB" : "Rechercher un film"}</Text>
+          <MediaSearchField
+            placeholder="Ex. Dune"
+            search={searchMovies}
+            onPick={handlePick}
+            color={color}
+            credit="Données et affiches : TMDB"
+          />
+        </>
+      )}
 
-            {linking && (
-              <View style={styles.linkingRow}>
-                <ActivityIndicator color={color} />
-                <Text style={styles.linkingText}>Récupération des infos…</Text>
-              </View>
-            )}
+      {linking && (
+        <View style={styles.linkingRow}>
+          <ActivityIndicator color={color} />
+          <Text style={styles.linkingText}>Récupération des infos…</Text>
+        </View>
+      )}
 
-            {tmdbId && !linking && (
-              <View style={[styles.linked, { borderColor: color + "66" }]}>
-                {posterUrl ? (
-                  <Image source={{ uri: posterUrl }} style={styles.linkedPoster} />
-                ) : (
-                  <View style={[styles.linkedPoster, { backgroundColor: color + "33" }]} />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.linkedTitle} numberOfLines={2}>
-                    {title || "Sans titre"}
-                  </Text>
-                  <Text style={[styles.linkedMeta, { color }]}>Relié à TMDB{year ? ` · ${year}` : ""}</Text>
-                </View>
-                <Pressable onPress={unlink} accessibilityRole="button" accessibilityLabel="Retirer le lien TMDB" style={styles.unlinkBtn}>
-                  <Ionicons name="close" size={20} color={t.textMuted} />
-                </Pressable>
-              </View>
-            )}
-
-            <Text style={styles.label}>Titre *</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. Inception"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Statut</Text>
-            <View style={styles.chips}>
-              {STATUSES.map((s) => {
-                const on = status === s;
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => setStatus(s)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={[styles.chip, on && styles.chipOn]}
-                  >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{MOVIE_STATUS_LABEL[s]}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.twoCols}>
-              <View style={styles.col}>
-                <Text style={styles.label}>Durée (min)</Text>
-                <TextInput
-                  value={runtime}
-                  onChangeText={(v) => setRuntime(digits(v))}
-                  keyboardType="number-pad"
-                  placeholder="Ex. 148"
-                  placeholderTextColor={t.textMuted}
-                  style={styles.input}
-                />
-              </View>
-              <View style={styles.col}>
-                <Text style={styles.label}>Déjà vu (min)</Text>
-                <TextInput
-                  value={progress}
-                  onChangeText={(v) => setProgress(digits(v))}
-                  keyboardType="number-pad"
-                  style={styles.input}
-                />
-              </View>
-            </View>
-
-            <View style={styles.twoCols}>
-              <View style={styles.col}>
-                <Text style={styles.label}>Année de sortie</Text>
-                <TextInput
-                  value={year}
-                  onChangeText={(v) => setYear(digits(v).slice(0, 4))}
-                  keyboardType="number-pad"
-                  placeholder="Optionnel"
-                  placeholderTextColor={t.textMuted}
-                  style={styles.input}
-                />
-              </View>
-              <View style={styles.col} />
-            </View>
-
-            <Text style={styles.label}>Début du visionnage</Text>
-            <DateField
-              value={startedAt}
-              onChange={setStartedAt}
-              color={color}
-              placeholder="Choisir une date"
-              accessibilityLabel="Début du visionnage"
-            />
-
-            <Text style={styles.label}>Ma note</Text>
-            <View style={styles.stars}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Pressable
-                  key={n}
-                  onPress={() => setRating(rating === n ? 0 : n)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Note ${n} sur 5`}
-                  accessibilityState={{ selected: rating >= n }}
-                  style={styles.starBtn}
-                >
-                  <Ionicons
-                    name={rating >= n ? "star" : "star-outline"}
-                    size={28}
-                    color={rating >= n ? starColor : t.textMuted}
-                  />
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Avis (optionnel)</Text>
-            <TextInput
-              value={review}
-              onChangeText={setReview}
-              placeholder="Ton avis sur le film…"
-              placeholderTextColor={t.textMuted}
-              multiline
-              style={[styles.input, styles.textarea]}
-            />
-
-            <View style={styles.actions}>
-              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
-                <Text style={styles.btnTextSecondary}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
-                onPress={handleSave}
-                disabled={!valid}
-                accessibilityRole="button"
-              >
-                <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
-              </Pressable>
-            </View>
-
-            {initial && onDelete && (
-              <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.deleteBtn}>
-                <Text style={[styles.deleteText, { color: danger }]}>Supprimer</Text>
-              </Pressable>
-            )}
+      {tmdbId && !linking && (
+        <View style={[styles.linked, { borderColor: color + "66" }]}>
+          {posterUrl ? (
+            <Image source={{ uri: posterUrl }} style={styles.linkedPoster} />
+          ) : (
+            <View style={[styles.linkedPoster, { backgroundColor: color + "33" }]} />
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.linkedTitle} numberOfLines={2}>
+              {title || "Sans titre"}
+            </Text>
+            <Text style={[styles.linkedMeta, { color }]}>Relié à TMDB{year ? ` · ${year}` : ""}</Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          <Pressable onPress={unlink} accessibilityRole="button" accessibilityLabel="Retirer le lien TMDB" style={styles.unlinkBtn}>
+            <Ionicons name="close" size={20} color={t.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      <Text style={styles.label}>Titre *</Text>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ex. Inception"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Statut</Text>
+      <View style={styles.chips}>
+        {STATUSES.map((s) => {
+          const on = status === s;
+          return (
+            <Pressable
+              key={s}
+              onPress={() => setStatus(s)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{MOVIE_STATUS_LABEL[s]}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.twoCols}>
+        <View style={styles.col}>
+          <Text style={styles.label}>Durée (min)</Text>
+          <TextInput
+            value={runtime}
+            onChangeText={(v) => setRuntime(digits(v))}
+            keyboardType="number-pad"
+            placeholder="Ex. 148"
+            placeholderTextColor={t.textMuted}
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.col}>
+          <Text style={styles.label}>Déjà vu (min)</Text>
+          <TextInput
+            value={progress}
+            onChangeText={(v) => setProgress(digits(v))}
+            keyboardType="number-pad"
+            style={styles.input}
+          />
+        </View>
+      </View>
+
+      <View style={styles.twoCols}>
+        <View style={styles.col}>
+          <Text style={styles.label}>Année de sortie</Text>
+          <TextInput
+            value={year}
+            onChangeText={(v) => setYear(digits(v).slice(0, 4))}
+            keyboardType="number-pad"
+            placeholder="Optionnel"
+            placeholderTextColor={t.textMuted}
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.col} />
+      </View>
+
+      <Text style={styles.label}>Début du visionnage</Text>
+      <DateField
+        value={startedAt}
+        onChange={setStartedAt}
+        color={color}
+        placeholder="Choisir une date"
+        accessibilityLabel="Début du visionnage"
+      />
+
+      <Text style={styles.label}>Ma note</Text>
+      <View style={styles.stars}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable
+            key={n}
+            onPress={() => setRating(rating === n ? 0 : n)}
+            accessibilityRole="button"
+            accessibilityLabel={`Note ${n} sur 5`}
+            accessibilityState={{ selected: rating >= n }}
+            style={styles.starBtn}
+          >
+            <Ionicons
+              name={rating >= n ? "star" : "star-outline"}
+              size={28}
+              color={rating >= n ? starColor : t.textMuted}
+            />
+          </Pressable>
+        ))}
+      </View>
+
+      <Text style={styles.label}>Avis (optionnel)</Text>
+      <TextInput
+        value={review}
+        onChangeText={setReview}
+        placeholder="Ton avis sur le film…"
+        placeholderTextColor={t.textMuted}
+        multiline
+        style={[styles.input, styles.textarea]}
+      />
+
+      <View style={styles.actions}>
+        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+          <Text style={styles.btnTextSecondary}>Annuler</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
+          onPress={handleSave}
+          disabled={!valid}
+          accessibilityRole="button"
+        >
+          <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
+        </Pressable>
+      </View>
+
+      {initial && onDelete && <SheetActions onDelete={handleDelete} />}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-    },
-    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border, marginBottom: 14 },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
     label: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), color: t.textMuted, marginTop: 12, marginBottom: 6 },
     input: {
@@ -399,7 +364,5 @@ function makeStyles(t: Theme) {
     btnSecondary: { backgroundColor: t.cardAlt },
     btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
     btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
-    deleteBtn: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
-    deleteText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14) },
   });
 }

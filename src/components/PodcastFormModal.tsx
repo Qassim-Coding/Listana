@@ -1,24 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { AppleSearchResult, searchAppleAudiobooks, searchApplePodcasts } from "../api/itunes";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Podcast, PodcastKind, PodcastStatus } from "../types/podcast";
+import BottomSheet from "./BottomSheet";
 import MediaSearchField from "./MediaSearchField";
 import { PODCAST_KIND_LABEL, PODCAST_STATUS_LABEL } from "./PodcastCard";
+import SheetActions from "./SheetActions";
 
 type Props = {
   visible: boolean;
@@ -126,7 +116,6 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
     ]);
   }
 
-  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
   const color = t.media.podcast;
   const store = kind === "audiobook" ? "Apple Books" : "Apple Podcasts";
   const linkedMeta = [
@@ -138,184 +127,157 @@ export default function PodcastFormModal({ visible, initial, onClose, onSubmit, 
     .join(" · ");
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.heading}>{initial ? "Modifier" : "Ajouter un podcast ou un livre audio"}</Text>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.heading}>{initial ? "Modifier" : "Ajouter un podcast ou un livre audio"}</Text>
 
-            <Text style={styles.label}>Type</Text>
-            <View style={styles.segment}>
-              {KINDS.map((k) => {
-                const on = kind === k;
-                return (
-                  <Pressable
-                    key={k}
-                    onPress={() => changeKind(k)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={[styles.segmentBtn, on && styles.segmentBtnOn]}
-                  >
-                    <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{PODCAST_KIND_LABEL[k]}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+      <Text style={styles.label}>Type</Text>
+      <View style={styles.segment}>
+        {KINDS.map((k) => {
+          const on = kind === k;
+          return (
+            <Pressable
+              key={k}
+              onPress={() => changeKind(k)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.segmentBtn, on && styles.segmentBtnOn]}
+            >
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]}>{PODCAST_KIND_LABEL[k]}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
 
-            {!appleId && (
-              <>
-                <Text style={styles.label}>
-                  {kind === "audiobook" ? "Rechercher un livre audio" : "Rechercher un podcast"}
-                </Text>
-                {/* La fonction de recherche change avec le type : podcasts ou livres audio */}
-                <MediaSearchField
-                  placeholder={kind === "audiobook" ? "Ex. Dune" : "Ex. 10'000 pas du Raptor"}
-                  search={kind === "audiobook" ? searchAppleAudiobooks : searchApplePodcasts}
-                  onPick={handlePick}
-                  color={color}
-                  credit={`Recherche et pochettes : ${store}`}
-                />
-              </>
-            )}
+      {!appleId && (
+        <>
+          <Text style={styles.label}>
+            {kind === "audiobook" ? "Rechercher un livre audio" : "Rechercher un podcast"}
+          </Text>
+          {/* La fonction de recherche change avec le type : podcasts ou livres audio */}
+          <MediaSearchField
+            placeholder={kind === "audiobook" ? "Ex. Dune" : "Ex. 10'000 pas du Raptor"}
+            search={kind === "audiobook" ? searchAppleAudiobooks : searchApplePodcasts}
+            onPick={handlePick}
+            color={color}
+            credit={`Recherche et pochettes : ${store}`}
+          />
+        </>
+      )}
 
-            {!!appleId && (
-              <View style={[styles.linked, { borderColor: color + "66" }]}>
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
-                ) : (
-                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.linkedTitle} numberOfLines={2}>
-                    {title || "Sans titre"}
-                  </Text>
-                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={2}>
-                    {linkedMeta}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={unlink}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Retirer le lien ${store}`}
-                  style={styles.unlinkBtn}
-                >
-                  <Ionicons name="close" size={20} color={t.textMuted} />
-                </Pressable>
-              </View>
-            )}
-
-            <Text style={styles.label}>Titre *</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. 10'000 pas"
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>{kind === "audiobook" ? "Auteur / narrateur" : "Animateur"} (optionnel)</Text>
-            <TextInput
-              style={styles.input}
-              value={host}
-              onChangeText={setHost}
-              placeholder={kind === "audiobook" ? "Optionnel" : "Ex. Le Raptor"}
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>Statut</Text>
-            <View style={styles.chips}>
-              {STATUSES.map((s) => {
-                const on = status === s;
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => setStatus(s)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={[styles.chip, on && styles.chipOn]}
-                  >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>{PODCAST_STATUS_LABEL[s]}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.label}>{kind === "audiobook" ? "Dernier chapitre écouté" : "Dernier épisode écouté"}</Text>
-            <TextInput
-              style={styles.input}
-              value={lastEpisode}
-              onChangeText={setLastEpisode}
-              placeholder="Ex. 42"
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>Notes (optionnel)</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Notes…"
-              placeholderTextColor={t.textMuted}
-              multiline
-            />
-
-            <View style={styles.actions}>
-              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
-                <Text style={styles.btnTextSecondary}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
-                disabled={!valid}
-                onPress={handleSave}
-                accessibilityRole="button"
-              >
-                <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
-              </Pressable>
-            </View>
-
-            {initial && (
-              <View style={styles.extraRow}>
-                {onDuplicate && (
-                  <Pressable
-                    onPress={() => {
-                      onDuplicate(initial);
-                      onClose();
-                    }}
-                    accessibilityRole="button"
-                    style={styles.extraBtn}
-                  >
-                    <Text style={styles.extraText}>Dupliquer</Text>
-                  </Pressable>
-                )}
-                {onDelete && (
-                  <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.extraBtn}>
-                    <Text style={[styles.extraText, { color: danger }]}>Supprimer</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
+      {!!appleId && (
+        <View style={[styles.linked, { borderColor: color + "66" }]}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+          ) : (
+            <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.linkedTitle} numberOfLines={2}>
+              {title || "Sans titre"}
+            </Text>
+            <Text style={[styles.linkedMeta, { color }]} numberOfLines={2}>
+              {linkedMeta}
+            </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          <Pressable
+            onPress={unlink}
+            accessibilityRole="button"
+            accessibilityLabel={`Retirer le lien ${store}`}
+            style={styles.unlinkBtn}
+          >
+            <Ionicons name="close" size={20} color={t.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      <Text style={styles.label}>Titre *</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ex. 10'000 pas"
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>{kind === "audiobook" ? "Auteur / narrateur" : "Animateur"} (optionnel)</Text>
+      <TextInput
+        style={styles.input}
+        value={host}
+        onChangeText={setHost}
+        placeholder={kind === "audiobook" ? "Optionnel" : "Ex. Le Raptor"}
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>Statut</Text>
+      <View style={styles.chips}>
+        {STATUSES.map((s) => {
+          const on = status === s;
+          return (
+            <Pressable
+              key={s}
+              onPress={() => setStatus(s)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>{PODCAST_STATUS_LABEL[s]}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={styles.label}>{kind === "audiobook" ? "Dernier chapitre écouté" : "Dernier épisode écouté"}</Text>
+      <TextInput
+        style={styles.input}
+        value={lastEpisode}
+        onChangeText={setLastEpisode}
+        placeholder="Ex. 42"
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>Notes (optionnel)</Text>
+      <TextInput
+        style={[styles.input, styles.textarea]}
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Notes…"
+        placeholderTextColor={t.textMuted}
+        multiline
+      />
+
+      <View style={styles.actions}>
+        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+          <Text style={styles.btnTextSecondary}>Annuler</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
+          disabled={!valid}
+          onPress={handleSave}
+          accessibilityRole="button"
+        >
+          <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
+        </Pressable>
+      </View>
+
+      {initial && (
+        <SheetActions
+          onDuplicate={
+            onDuplicate
+              ? () => {
+                  onDuplicate(initial);
+                  onClose();
+                }
+              : undefined
+          }
+          onDelete={onDelete ? handleDelete : undefined}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-    },
-    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border, marginBottom: 14 },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
     label: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), color: t.textMuted, marginTop: 12, marginBottom: 6 },
     input: {
@@ -369,8 +331,5 @@ function makeStyles(t: Theme) {
     btnSecondary: { backgroundColor: t.cardAlt },
     btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
     btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
-    extraRow: { flexDirection: "row", justifyContent: "center", gap: 24, marginTop: 8 },
-    extraBtn: { minHeight: 44, justifyContent: "center", paddingHorizontal: 8 },
-    extraText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14), color: t.textMuted },
   });
 }

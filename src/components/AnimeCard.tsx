@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { ANIME_STATUS_LABEL } from "../hooks/useAnimes";
 import { Theme } from "../theme";
+import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Anime } from "../types/anime";
 
@@ -15,6 +16,8 @@ type Props = {
 export default function AnimeCard({ anime, onEdit, onIncrementEpisode }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
+  // Fond léger selon l'état (en cours, à voir, terminé, abandonné), mêmes couleurs dans tout Listana
+  const tone = statusColors(t, anime.status);
   const color = t.media.anime;
   const total = anime.totalEpisodes;
   const atMax = !!total && anime.currentEpisode >= total;
@@ -28,7 +31,11 @@ export default function AnimeCard({ anime, onEdit, onIncrementEpisode }: Props) 
       onPress={() => onEdit(anime)}
       accessibilityRole="button"
       accessibilityLabel={`Modifier ${anime.title}`}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [
+        styles.card,
+        tone && { backgroundColor: tone.cardBg, borderColor: tone.cardBorder },
+        pressed && { opacity: 0.85 },
+      ]}
     >
       {anime.posterUrl ? (
         <Image source={{ uri: anime.posterUrl }} style={styles.cover} accessibilityIgnoresInvertColors />

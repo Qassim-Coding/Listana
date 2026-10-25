@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { Manga } from "../types/manga";
@@ -15,6 +16,8 @@ type Props = {
 export default function MangaCard({ item, onSelect, onUpdateProgress }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
+  // Fond léger selon l'état (en cours, à voir, terminé, abandonné), mêmes couleurs dans tout Listana
+  const tone = statusColors(t, item.status);
   const color = t.media.manga;
   const title = item.title || "Sans titre";
   const initial = title.trim().charAt(0).toUpperCase();
@@ -26,7 +29,11 @@ export default function MangaCard({ item, onSelect, onUpdateProgress }: Props) {
       onPress={() => onSelect(item)}
       accessibilityRole="button"
       accessibilityLabel={`Modifier ${title}`}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [
+        styles.card,
+        tone && { backgroundColor: tone.cardBg, borderColor: tone.cardBorder },
+        pressed && { opacity: 0.85 },
+      ]}
     >
       {item.coverUrl ? (
         <Image source={{ uri: item.coverUrl }} style={styles.cover} accessibilityIgnoresInvertColors />

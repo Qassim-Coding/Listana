@@ -15,6 +15,7 @@ import AnimeCard from "../components/AnimeCard";
 import AnimeFormModal from "../components/AnimeFormModal";
 import { ANIME_STATUS_LABEL, NewAnime, useAnimes } from "../hooks/useAnimes";
 import { Theme } from "../theme";
+import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Anime, AnimeStatus } from "../types/anime";
 
@@ -77,13 +78,14 @@ export default function AnimesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.search}>
-        <Ionicons name="search-outline" size={18} color={t.textMuted} />
+        {/* Filtre MA liste (pas une recherche en ligne : celle-ci est dans la fenêtre « Ajouter ») */}
+        <Ionicons name="funnel-outline" size={18} color={t.textMuted} />
         <TextInput
           value={query}
           onChangeText={setQuery}
-          placeholder="Rechercher un animé"
+          placeholder="Filtrer ma liste"
           placeholderTextColor={t.textMuted}
-          accessibilityLabel="Rechercher un animé"
+          accessibilityLabel="Filtrer ma liste de animés"
           style={styles.searchInput}
         />
       </View>
@@ -96,15 +98,21 @@ export default function AnimesScreen() {
       >
         {FILTERS.map((f) => {
           const on = filter === f;
+          // Chaque état garde sa couleur (Tous reste neutre)
+          const tone = statusColors(t, f);
           return (
             <Pressable
               key={f}
               onPress={() => setFilter(f)}
               accessibilityRole="button"
               accessibilityState={{ selected: on }}
-              style={[styles.chip, on && styles.chipOn]}
+              style={[
+                styles.chip,
+                tone && { backgroundColor: tone.chipBg, borderColor: tone.chipBorder },
+                on && (tone ? { backgroundColor: tone.chipOnBg, borderColor: tone.chipOnBg } : styles.chipOn),
+              ]}
             >
-              <Text style={[styles.chipText, on && styles.chipTextOn]}>
+              <Text style={[styles.chipText, tone && { color: t.text }, on && (tone ? { color: tone.chipOnText } : styles.chipTextOn)]}>
                 {f === "all" ? "Tous" : ANIME_STATUS_LABEL[f]} · {count(f)}
               </Text>
             </Pressable>

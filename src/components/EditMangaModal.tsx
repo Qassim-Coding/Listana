@@ -1,24 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { MangaSearchResult, searchManga } from "../api/mal";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Manga, MangaStatus } from "../types/manga";
 import { MANGA_STATUS_LABEL } from "../utils/mangaProgress";
+import BottomSheet from "./BottomSheet";
 import MediaSearchField from "./MediaSearchField";
+import SheetActions from "./SheetActions";
 
 type Props = {
   visible: boolean;
@@ -130,7 +120,6 @@ export default function EditMangaModal({
     ]);
   }
 
-  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
   const color = t.media.manga;
   const totals = [
     totalVolumes ? `${totalVolumes} tome${totalVolumes > 1 ? "s" : ""}` : "",
@@ -140,184 +129,147 @@ export default function EditMangaModal({
     .join(" · ");
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.title}>{initial ? "Modifier le manga" : "Nouveau manga"}</Text>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.title}>{initial ? "Modifier le manga" : "Nouveau manga"}</Text>
 
-            {!malId && (
-              <>
-                <Text style={styles.label}>{initial ? "Relier à MyAnimeList" : "Rechercher un manga"}</Text>
-                <MediaSearchField
-                  placeholder="Ex. Vagabond"
-                  search={searchManga}
-                  onPick={handlePick}
-                  color={color}
-                  credit="Données et couvertures : MyAnimeList"
-                />
-              </>
-            )}
+      {!malId && (
+        <>
+          <Text style={styles.label}>{initial ? "Relier à MyAnimeList" : "Rechercher un manga"}</Text>
+          <MediaSearchField
+            placeholder="Ex. Vagabond"
+            search={searchManga}
+            onPick={handlePick}
+            color={color}
+            credit="Données et couvertures : MyAnimeList"
+          />
+        </>
+      )}
 
-            {!!malId && (
-              <View style={[styles.linked, { borderColor: color + "66" }]}>
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
-                ) : (
-                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.linkedTitle} numberOfLines={2}>
-                    {title || "Sans titre"}
-                  </Text>
-                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
-                    Relié à MyAnimeList{totals ? ` · ${totals}` : ""}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={unlink}
-                  accessibilityRole="button"
-                  accessibilityLabel="Retirer le lien MyAnimeList"
-                  style={styles.unlinkBtn}
-                >
-                  <Ionicons name="close" size={20} color={t.textMuted} />
-                </Pressable>
-              </View>
-            )}
-
-            <Text style={styles.label}>Titre</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. Vagabond"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Auteur (optionnel)</Text>
-            <TextInput
-              value={series}
-              onChangeText={setSeries}
-              placeholder="Ex. Takehiko Inoue"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Statut</Text>
-            <View style={styles.chips}>
-              {STATUSES.map((s) => {
-                const on = status === s;
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => setStatus(s)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={[styles.chip, on && styles.chipOn]}
-                  >
-                    <Text style={[styles.chipText, on && styles.chipTextOn]}>
-                      {MANGA_STATUS_LABEL[s]}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.label}>Je suis ma lecture par</Text>
-            <View style={styles.segment}>
-              {(["volume", "chapter"] as const).map((mode) => {
-                const on = progressMode === mode;
-                return (
-                  <Pressable
-                    key={mode}
-                    onPress={() => setProgressMode(mode)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={[styles.segmentBtn, on && styles.segmentBtnOn]}
-                  >
-                    <Text style={[styles.segmentText, on && styles.segmentTextOn]}>
-                      {mode === "volume" ? "Tome" : "Chapitre / scan"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text style={styles.label}>Dernier tome / chapitre lu</Text>
-            <TextInput
-              value={lastChapter}
-              onChangeText={setLastChapter}
-              placeholder="Ex. 190"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Notes</Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Notes, réflexions…"
-              placeholderTextColor={t.textMuted}
-              multiline
-              style={[styles.input, styles.textarea]}
-            />
-            <Text style={styles.wordCount}>{wordCount} mots</Text>
-
-            <View style={styles.actions}>
-              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
-                <Text style={styles.btnTextSecondary}>Annuler</Text>
-              </Pressable>
-              <Pressable style={[styles.btn, styles.btnPrimary]} onPress={handleSave} accessibilityRole="button">
-                <Text style={styles.btnTextPrimary}>Enregistrer</Text>
-              </Pressable>
-            </View>
-
-            {initial && (
-              <View style={styles.extraRow}>
-                {onDuplicate && (
-                  <Pressable onPress={handleDuplicate} accessibilityRole="button" style={styles.extraBtn}>
-                    <Text style={styles.extraText}>Dupliquer</Text>
-                  </Pressable>
-                )}
-                {onDelete && (
-                  <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.extraBtn}>
-                    <Text style={[styles.extraText, { color: danger }]}>Supprimer</Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
+      {!!malId && (
+        <View style={[styles.linked, { borderColor: color + "66" }]}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+          ) : (
+            <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.linkedTitle} numberOfLines={2}>
+              {title || "Sans titre"}
+            </Text>
+            <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
+              Relié à MyAnimeList{totals ? ` · ${totals}` : ""}
+            </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          <Pressable
+            onPress={unlink}
+            accessibilityRole="button"
+            accessibilityLabel="Retirer le lien MyAnimeList"
+            style={styles.unlinkBtn}
+          >
+            <Ionicons name="close" size={20} color={t.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      <Text style={styles.label}>Titre</Text>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ex. Vagabond"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Auteur (optionnel)</Text>
+      <TextInput
+        value={series}
+        onChangeText={setSeries}
+        placeholder="Ex. Takehiko Inoue"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Statut</Text>
+      <View style={styles.chips}>
+        {STATUSES.map((s) => {
+          const on = status === s;
+          return (
+            <Pressable
+              key={s}
+              onPress={() => setStatus(s)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.chip, on && styles.chipOn]}
+            >
+              <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                {MANGA_STATUS_LABEL[s]}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={styles.label}>Je suis ma lecture par</Text>
+      <View style={styles.segment}>
+        {(["volume", "chapter"] as const).map((mode) => {
+          const on = progressMode === mode;
+          return (
+            <Pressable
+              key={mode}
+              onPress={() => setProgressMode(mode)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.segmentBtn, on && styles.segmentBtnOn]}
+            >
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]}>
+                {mode === "volume" ? "Tome" : "Chapitre / scan"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text style={styles.label}>Dernier tome / chapitre lu</Text>
+      <TextInput
+        value={lastChapter}
+        onChangeText={setLastChapter}
+        placeholder="Ex. 190"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Notes</Text>
+      <TextInput
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Notes, réflexions…"
+        placeholderTextColor={t.textMuted}
+        multiline
+        style={[styles.input, styles.textarea]}
+      />
+      <Text style={styles.wordCount}>{wordCount} mots</Text>
+
+      <View style={styles.actions}>
+        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+          <Text style={styles.btnTextSecondary}>Annuler</Text>
+        </Pressable>
+        <Pressable style={[styles.btn, styles.btnPrimary]} onPress={handleSave} accessibilityRole="button">
+          <Text style={styles.btnTextPrimary}>Enregistrer</Text>
+        </Pressable>
+      </View>
+
+      {initial && (
+        <SheetActions
+          onDuplicate={onDuplicate ? handleDuplicate : undefined}
+          onDelete={onDelete ? handleDelete : undefined}
+        />
+      )}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.border,
-      marginBottom: 14,
-    },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 8 },
     label: {
       fontFamily: t.fonts.semibold,
@@ -396,8 +348,5 @@ function makeStyles(t: Theme) {
     btnSecondary: { backgroundColor: t.cardAlt },
     btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
     btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
-    extraRow: { flexDirection: "row", justifyContent: "center", gap: 24, marginTop: 8 },
-    extraBtn: { minHeight: 44, justifyContent: "center", paddingHorizontal: 8 },
-    extraText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14), color: t.textMuted },
   });
 }

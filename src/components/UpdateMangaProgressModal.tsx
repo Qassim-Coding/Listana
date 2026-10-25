@@ -1,18 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { Theme } from "../theme";
 import { Manga } from "../types/manga";
+import BottomSheet from "./BottomSheet";
 import {
   MangaUnit,
   formatLastRead,
@@ -59,133 +51,106 @@ export default function UpdateMangaProgressModal({ manga, onClose, onSubmit }: P
   }
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        style={styles.backdrop}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>Mettre à jour</Text>
-            <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
-              <Text style={styles.cancel}>Annuler</Text>
-            </Pressable>
-          </View>
+    <BottomSheet visible onClose={onClose}>
+      <View style={styles.headerRow}>
+        <Text style={styles.title}>Mettre à jour</Text>
+        <Pressable onPress={onClose} accessibilityRole="button" hitSlop={12}>
+          <Text style={styles.cancel}>Annuler</Text>
+        </Pressable>
+      </View>
 
-          <Text style={styles.mangaTitle} numberOfLines={1}>
-            {m.title || "Sans titre"}
-          </Text>
-          <Text style={styles.current}>Actuellement : {formatLastRead(m)}</Text>
+      <Text style={styles.mangaTitle} numberOfLines={1}>
+        {m.title || "Sans titre"}
+      </Text>
+      <Text style={styles.current}>Actuellement : {formatLastRead(m)}</Text>
 
-          <View style={styles.segment}>
-            {(["volume", "chapter"] as const).map((u) => {
-              const on = mode === u;
-              return (
-                <Pressable
-                  key={u}
-                  onPress={() => setMode(u)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  style={[styles.segmentBtn, on && styles.segmentBtnOn]}
-                >
-                  <Text style={[styles.segmentText, on && styles.segmentTextOn]}>
-                    {u === "volume" ? "Tome" : "Chapitre / scan"}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View style={styles.counterBox}>
-            <Text style={styles.counterLabel}>
-              Je suis maintenant au {unitTitle(mode).toLowerCase()}
-            </Text>
-            <View style={styles.counterRow}>
-              <Pressable
-                onPress={() => setN(n - 1)}
-                accessibilityRole="button"
-                accessibilityLabel="Retirer un"
-                style={styles.roundBtn}
-              >
-                <Ionicons name="remove" size={22} color={t.text} />
-              </Pressable>
-              <TextInput
-                value={value}
-                onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
-                keyboardType="number-pad"
-                accessibilityLabel={`Numéro du ${unitTitle(mode).toLowerCase()} atteint`}
-                style={styles.counterInput}
-              />
-              <Pressable
-                onPress={() => setN(n + 1)}
-                accessibilityRole="button"
-                accessibilityLabel="Ajouter un"
-                style={styles.roundBtn}
-              >
-                <Ionicons name="add" size={22} color={t.text} />
-              </Pressable>
-            </View>
-            <View style={styles.quickRow}>
-              {[1, 5, 10].map((q) => (
-                <Pressable
-                  key={q}
-                  onPress={() => setN(n + q)}
-                  accessibilityRole="button"
-                  style={styles.quickBtn}
-                >
-                  <Text style={styles.quickText}>+{q}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {delta !== 0 && (
-            <View style={styles.deltaBadge}>
-              <Text style={styles.deltaText}>
-                {start} → {n} · {delta > 0 ? "+" : ""}
-                {delta} {unitWord(mode, delta)}
+      <View style={styles.segment}>
+        {(["volume", "chapter"] as const).map((u) => {
+          const on = mode === u;
+          return (
+            <Pressable
+              key={u}
+              onPress={() => setMode(u)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              style={[styles.segmentBtn, on && styles.segmentBtnOn]}
+            >
+              <Text style={[styles.segmentText, on && styles.segmentTextOn]}>
+                {u === "volume" ? "Tome" : "Chapitre / scan"}
               </Text>
-            </View>
-          )}
+            </Pressable>
+          );
+        })}
+      </View>
 
-          <Pressable onPress={() => save()} accessibilityRole="button" style={styles.saveBtn}>
-            <Text style={styles.saveText}>Enregistrer</Text>
-          </Pressable>
+      <View style={styles.counterBox}>
+        <Text style={styles.counterLabel}>
+          Je suis maintenant au {unitTitle(mode).toLowerCase()}
+        </Text>
+        <View style={styles.counterRow}>
           <Pressable
-            onPress={() => save({ status: "completed" })}
+            onPress={() => setN(n - 1)}
             accessibilityRole="button"
-            style={styles.doneBtn}
+            accessibilityLabel="Retirer un"
+            style={styles.roundBtn}
           >
-            <Text style={styles.doneText}>Marquer comme terminé</Text>
+            <Ionicons name="remove" size={22} color={t.text} />
+          </Pressable>
+          <TextInput
+            value={value}
+            onChangeText={(v) => setValue(v.replace(/\D/g, ""))}
+            keyboardType="number-pad"
+            accessibilityLabel={`Numéro du ${unitTitle(mode).toLowerCase()} atteint`}
+            style={styles.counterInput}
+          />
+          <Pressable
+            onPress={() => setN(n + 1)}
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter un"
+            style={styles.roundBtn}
+          >
+            <Ionicons name="add" size={22} color={t.text} />
           </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        <View style={styles.quickRow}>
+          {[1, 5, 10].map((q) => (
+            <Pressable
+              key={q}
+              onPress={() => setN(n + q)}
+              accessibilityRole="button"
+              style={styles.quickBtn}
+            >
+              <Text style={styles.quickText}>+{q}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {delta !== 0 && (
+        <View style={styles.deltaBadge}>
+          <Text style={styles.deltaText}>
+            {start} → {n} · {delta > 0 ? "+" : ""}
+            {delta} {unitWord(mode, delta)}
+          </Text>
+        </View>
+      )}
+
+      <Pressable onPress={() => save()} accessibilityRole="button" style={styles.saveBtn}>
+        <Text style={styles.saveText}>Enregistrer</Text>
+      </Pressable>
+      <Pressable
+        onPress={() => save({ status: "completed" })}
+        accessibilityRole="button"
+        style={styles.doneBtn}
+      >
+        <Text style={styles.doneText}>Marquer comme terminé</Text>
+      </Pressable>
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.55)" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-      paddingBottom: 28,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.border,
-      marginBottom: 12,
-    },
     headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
     title: { fontFamily: t.fonts.bold, fontSize: t.fs(22), color: t.text },
     cancel: { fontFamily: t.fonts.regular, fontSize: t.fs(15), color: t.textMuted },

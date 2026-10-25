@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { Image, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { appleLinkLabel } from "../api/itunes";
 import { Theme } from "../theme";
+import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Podcast } from "../types/podcast";
 
@@ -27,6 +28,8 @@ type Props = {
 export default function PodcastCard({ item, onEdit, onNextEpisode }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
+  // Fond léger selon l'état (en cours, à voir, terminé, abandonné), mêmes couleurs dans tout Listana
+  const tone = statusColors(t, item.status);
   const color = t.media.podcast;
   const title = item.title || "Sans titre";
   const kind = item.kind ?? "podcast";
@@ -49,7 +52,11 @@ export default function PodcastCard({ item, onEdit, onNextEpisode }: Props) {
       onPress={() => onEdit(item)}
       accessibilityRole="button"
       accessibilityLabel={`Modifier ${title}`}
-      style={({ pressed }) => [styles.card, pressed && { opacity: 0.85 }]}
+      style={({ pressed }) => [
+        styles.card,
+        tone && { backgroundColor: tone.cardBg, borderColor: tone.cardBorder },
+        pressed && { opacity: 0.85 },
+      ]}
     >
       {item.coverUrl ? (
         <Image source={{ uri: item.coverUrl }} style={styles.cover} accessibilityIgnoresInvertColors />

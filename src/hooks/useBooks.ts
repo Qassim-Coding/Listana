@@ -125,6 +125,18 @@ export function useBooks() {
           next.currentPage = Math.min(next.currentPage, next.totalPages);
         }
 
+        // Un livre terminé ou abandonné garde son état quand on modifie ses infos (titre, notes, pages totales…).
+        // Pour le rouvrir, on passe par la progression : enregistrer une page le remet « En cours ».
+        if (b.status === "done") {
+          if (next.totalPages) next.currentPage = next.totalPages;
+          next.status = "done";
+          return next;
+        }
+        if (b.status === "abandoned") {
+          next.status = "abandoned";
+          return next;
+        }
+
         const newStatus = computeStatus(next);
         if (b.status !== "in_progress" && newStatus === "in_progress" && !next.startedAt) {
           next.startedAt = now;
@@ -155,6 +167,16 @@ export function useBooks() {
     );
   }
 
+  // Abandonner un livre : il quitte « En cours » (et l'accueil) mais garde sa page.
+  // Enregistrer une nouvelle page plus tard le remet « En cours ».
+  function markAbandoned(id: string) {
+    setBooks((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, status: "abandoned", finishedAt: undefined, updatedAt: Date.now() } : b
+      )
+    );
+  }
+
   function updateNotes(id: string, notes: string) {
     setBooks((prev) =>
       prev.map((b) =>
@@ -174,7 +196,7 @@ export function useBooks() {
     if (filter === "in_progress") list = list.filter((b) => b.status === "in_progress");
     else if (filter === "done") list = list.filter((b) => b.status === "done");
 
-    const byStatusOrder: Record<BookStatus, number> = { in_progress: 0, planning: 1, done: 2 };
+    const byStatusOrder: Record<BookStatus, number> = { in_progress: 0, planning: 1, done: 2, abandoned: 3 };
     const sorted = [...list].sort((a, b) => {
       if (sort === "date") return (b.updatedAt ?? 0) - (a.updatedAt ?? 0); // newest first
       if (sort === "title") return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
@@ -192,6 +214,7 @@ export function useBooks() {
     updateProgress,
     updateBook,
     markDone,
+    markAbandoned,
     updateNotes,
     removeBook,
     doneCount,

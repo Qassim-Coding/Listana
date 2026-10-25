@@ -1,18 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useTheme } from "../ThemeContext";
 import { GameSearchResult, hasRawgKey, mapGenre, mapPlatform, searchGames } from "../api/rawg";
 import { Theme } from "../theme";
@@ -20,6 +8,8 @@ import { Game } from "../types/game";
 import DateField from "./DateField";
 import { GAME_GENRE_LABEL, GAME_STATUS_LABEL } from "./GameCard";
 import MediaSearchField from "./MediaSearchField";
+import BottomSheet from "./BottomSheet";
+import SheetActions from "./SheetActions";
 
 type Props = {
   visible: boolean;
@@ -114,7 +104,6 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
     ]);
   }
 
-  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
   const color = t.media.game;
 
   function Chips<V extends string>({
@@ -149,137 +138,114 @@ export default function GameFormModal({ visible, initial, onClose, onSubmit, onD
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.heading}>{initial ? "Modifier le jeu" : "Ajouter un jeu"}</Text>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.heading}>{initial ? "Modifier le jeu" : "Ajouter un jeu"}</Text>
 
-            {hasRawgKey() && !rawgId && (
-              <>
-                <Text style={styles.label}>{initial ? "Relier à RAWG" : "Rechercher un jeu"}</Text>
-                <MediaSearchField
-                  placeholder="Ex. Hollow Knight"
-                  search={searchGames}
-                  onPick={handlePick}
-                  color={color}
-                  credit="Données et images : RAWG"
-                />
-              </>
-            )}
+      {hasRawgKey() && !rawgId && (
+        <>
+          <Text style={styles.label}>{initial ? "Relier à RAWG" : "Rechercher un jeu"}</Text>
+          <MediaSearchField
+            placeholder="Ex. Hollow Knight"
+            search={searchGames}
+            onPick={handlePick}
+            color={color}
+            credit="Données et images : RAWG"
+          />
+        </>
+      )}
 
-            {!!rawgId && (
-              <View style={[styles.linked, { borderColor: color + "66" }]}>
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
-                ) : (
-                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.linkedTitle} numberOfLines={2}>
-                    {title || "Sans titre"}
-                  </Text>
-                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
-                    Relié à RAWG{releaseDate ? ` · ${releaseDate.slice(0, 4)}` : ""}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={unlink}
-                  accessibilityRole="button"
-                  accessibilityLabel="Retirer le lien RAWG"
-                  style={styles.unlinkBtn}
-                >
-                  <Ionicons name="close" size={20} color={t.textMuted} />
-                </Pressable>
-              </View>
-            )}
-
-            <Text style={styles.label}>Titre *</Text>
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. Hollow Knight"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Statut</Text>
-            <Chips values={STATUSES} value={status} onChange={setStatus} label={(v) => GAME_STATUS_LABEL[v]} />
-
-            <Text style={styles.label}>Plateforme</Text>
-            <Chips values={PLATFORMS} value={platform} onChange={setPlatform} label={(v) => v} />
-
-            <Text style={styles.label}>Genre</Text>
-            <Chips values={GENRES} value={genre} onChange={setGenre} label={(v) => GAME_GENRE_LABEL[v] ?? v} />
-
-            <Text style={styles.label}>Où j’en suis (optionnel)</Text>
-            <TextInput
-              value={lastCheckpoint}
-              onChangeText={setLastCheckpoint}
-              placeholder="Ex. Chapitre 3, boss de la forêt…"
-              placeholderTextColor={t.textMuted}
-              style={styles.input}
-            />
-
-            <Text style={styles.label}>Date de sortie (optionnel)</Text>
-            <DateField
-              value={releaseDate}
-              onChange={setReleaseDate}
-              color={color}
-              accessibilityLabel="Date de sortie"
-            />
-
-            <Text style={styles.label}>Notes (optionnel)</Text>
-            <TextInput
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Astuces, ressenti…"
-              placeholderTextColor={t.textMuted}
-              multiline
-              style={[styles.input, styles.textarea]}
-            />
-
-            <View style={styles.actions}>
-              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
-                <Text style={styles.btnTextSecondary}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
-                onPress={handleSave}
-                disabled={!valid}
-                accessibilityRole="button"
-              >
-                <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
-              </Pressable>
-            </View>
-
-            {initial && onDelete && (
-              <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.deleteBtn}>
-                <Text style={[styles.deleteText, { color: danger }]}>Supprimer</Text>
-              </Pressable>
-            )}
+      {!!rawgId && (
+        <View style={[styles.linked, { borderColor: color + "66" }]}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+          ) : (
+            <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.linkedTitle} numberOfLines={2}>
+              {title || "Sans titre"}
+            </Text>
+            <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
+              Relié à RAWG{releaseDate ? ` · ${releaseDate.slice(0, 4)}` : ""}
+            </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          <Pressable
+            onPress={unlink}
+            accessibilityRole="button"
+            accessibilityLabel="Retirer le lien RAWG"
+            style={styles.unlinkBtn}
+          >
+            <Ionicons name="close" size={20} color={t.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      <Text style={styles.label}>Titre *</Text>
+      <TextInput
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ex. Hollow Knight"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Statut</Text>
+      <Chips values={STATUSES} value={status} onChange={setStatus} label={(v) => GAME_STATUS_LABEL[v]} />
+
+      <Text style={styles.label}>Plateforme</Text>
+      <Chips values={PLATFORMS} value={platform} onChange={setPlatform} label={(v) => v} />
+
+      <Text style={styles.label}>Genre</Text>
+      <Chips values={GENRES} value={genre} onChange={setGenre} label={(v) => GAME_GENRE_LABEL[v] ?? v} />
+
+      <Text style={styles.label}>Où j’en suis (optionnel)</Text>
+      <TextInput
+        value={lastCheckpoint}
+        onChangeText={setLastCheckpoint}
+        placeholder="Ex. Chapitre 3, boss de la forêt…"
+        placeholderTextColor={t.textMuted}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Date de sortie (optionnel)</Text>
+      <DateField
+        value={releaseDate}
+        onChange={setReleaseDate}
+        color={color}
+        accessibilityLabel="Date de sortie"
+      />
+
+      <Text style={styles.label}>Notes (optionnel)</Text>
+      <TextInput
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Astuces, ressenti…"
+        placeholderTextColor={t.textMuted}
+        multiline
+        style={[styles.input, styles.textarea]}
+      />
+
+      <View style={styles.actions}>
+        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+          <Text style={styles.btnTextSecondary}>Annuler</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
+          onPress={handleSave}
+          disabled={!valid}
+          accessibilityRole="button"
+        >
+          <Text style={styles.btnTextPrimary}>{initial ? "Enregistrer" : "Ajouter"}</Text>
+        </Pressable>
+      </View>
+
+      {initial && onDelete && <SheetActions onDelete={handleDelete} />}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-    },
-    handle: { alignSelf: "center", width: 40, height: 4, borderRadius: 2, backgroundColor: t.border, marginBottom: 14 },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
     label: { fontFamily: t.fonts.semibold, fontSize: t.fs(12), color: t.textMuted, marginTop: 12, marginBottom: 6 },
     input: {
@@ -328,7 +294,5 @@ function makeStyles(t: Theme) {
     btnSecondary: { backgroundColor: t.cardAlt },
     btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
     btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
-    deleteBtn: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
-    deleteText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14) },
   });
 }

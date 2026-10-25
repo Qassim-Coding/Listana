@@ -19,13 +19,14 @@ import UpdateBookPageModal from "../src/components/UpdateBookPageModal";
 import WebBackButton from "../src/components/WebBackButton";
 import { useBooks } from "../src/hooks/useBooks";
 import { Theme, makeHeaderOptions } from "../src/theme";
+import { statusColors } from "../src/constants/statusColors";
 import { useTheme } from "../src/ThemeContext";
 import { Book, BookInput, BookStatus } from "../src/types/book";
 
 const isWeb = Platform.OS === "web";
 
 type Filter = "all" | BookStatus;
-const FILTERS: Filter[] = ["all", "in_progress", "planning", "done"];
+const FILTERS: Filter[] = ["all", "in_progress", "planning", "done", "abandoned"];
 const SORT_LABEL = { date: "Plus récents ↓", title: "Titre A → Z", status: "Par statut" } as const;
 const NEXT_SORT = { date: "title", title: "status", status: "date" } as const;
 
@@ -33,8 +34,19 @@ export default function BooksScreen() {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
   const insets = useSafeAreaInsets();
-  const { books, visibleBooks, loading, addBook, updateProgress, updateBook, markDone, removeBook, sort, setSort } =
-    useBooks();
+  const {
+    books,
+    visibleBooks,
+    loading,
+    addBook,
+    updateProgress,
+    updateBook,
+    markDone,
+    markAbandoned,
+    removeBook,
+    sort,
+    setSort,
+  } = useBooks();
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -90,13 +102,14 @@ export default function BooksScreen() {
       ) : (
         <View style={styles.container}>
           <View style={styles.search}>
-            <Ionicons name="search-outline" size={18} color={t.textMuted} />
+            {/* Filtre MA liste (pas une recherche en ligne : celle-ci est dans la fenêtre « Ajouter ») */}
+            <Ionicons name="funnel-outline" size={18} color={t.textMuted} />
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Rechercher un livre ou un auteur"
+              placeholder="Filtrer ma liste"
               placeholderTextColor={t.textMuted}
-              accessibilityLabel="Rechercher un livre"
+              accessibilityLabel="Filtrer ma liste de livres (titre ou auteur)"
               style={styles.searchInput}
             />
           </View>
@@ -109,15 +122,21 @@ export default function BooksScreen() {
           >
             {FILTERS.map((f) => {
               const on = filter === f;
+              // Chaque état garde sa couleur (Tous reste neutre)
+              const tone = statusColors(t, f);
               return (
                 <Pressable
                   key={f}
                   onPress={() => setFilter(f)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: on }}
-                  style={[styles.chip, on && styles.chipOn]}
+                  style={[
+                    styles.chip,
+                    tone && { backgroundColor: tone.chipBg, borderColor: tone.chipBorder },
+                    on && (tone ? { backgroundColor: tone.chipOnBg, borderColor: tone.chipOnBg } : styles.chipOn),
+                  ]}
                 >
-                  <Text style={[styles.chipText, on && styles.chipTextOn]}>
+                  <Text style={[styles.chipText, tone && { color: t.text }, on && (tone ? { color: tone.chipOnText } : styles.chipTextOn)]}>
                     {f === "all" ? "Tous" : BOOK_STATUS_LABEL[f]} · {count(f)}
                   </Text>
                 </Pressable>
@@ -177,6 +196,7 @@ export default function BooksScreen() {
         onClose={() => setPageBook(null)}
         onSave={(page) => pageBook && updateProgress(pageBook.id, page)}
         onMarkDone={() => pageBook && markDone(pageBook.id)}
+        onMarkAbandoned={() => pageBook && markAbandoned(pageBook.id)}
       />
     </View>
   );

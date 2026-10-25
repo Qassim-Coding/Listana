@@ -1,23 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Alert,
-  Image,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { BookSearchResult, searchBooks } from "../api/openLibrary";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { BookInput } from "../types/book";
 import MediaSearchField from "./MediaSearchField";
+import BottomSheet from "./BottomSheet";
+import SheetActions from "./SheetActions";
 
 type Props = {
   visible: boolean;
@@ -108,141 +98,110 @@ export default function AddBookModal({
     ]);
   }
 
-  const danger = t.scheme === "dark" ? "#FF7A7A" : "#C62828";
   const color = t.media.book;
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.backdrop} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.sheet}>
-            <View style={styles.handle} />
-            <Text style={styles.heading}>{heading}</Text>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <Text style={styles.heading}>{heading}</Text>
 
-            {!olKey && (
-              <>
-                <Text style={styles.label}>{initial ? "Relier à Open Library" : "Rechercher un livre"}</Text>
-                <MediaSearchField
-                  placeholder="Titre ou auteur, ex. Dune"
-                  search={searchBooks}
-                  onPick={handlePick}
-                  color={color}
-                  credit="Données et couvertures : Open Library"
-                />
-              </>
-            )}
+      {!olKey && (
+        <>
+          <Text style={styles.label}>{initial ? "Relier à Open Library" : "Rechercher un livre"}</Text>
+          <MediaSearchField
+            placeholder="Titre ou auteur, ex. Dune"
+            search={searchBooks}
+            onPick={handlePick}
+            color={color}
+            credit="Données et couvertures : Open Library"
+          />
+        </>
+      )}
 
-            {olKey && (
-              <View style={[styles.linked, { borderColor: color + "66" }]}>
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
-                ) : (
-                  <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.linkedTitle} numberOfLines={2}>
-                    {title || "Sans titre"}
-                  </Text>
-                  <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
-                    Relié à Open Library{year ? ` · ${year}` : ""}
-                  </Text>
-                </View>
-                <Pressable
-                  onPress={unlink}
-                  accessibilityRole="button"
-                  accessibilityLabel="Retirer le lien Open Library"
-                  style={styles.unlinkBtn}
-                >
-                  <Ionicons name="close" size={20} color={t.textMuted} />
-                </Pressable>
-              </View>
-            )}
-
-            <Text style={styles.label}>Titre *</Text>
-            <TextInput
-              style={styles.input}
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Ex. Le Problème à trois corps"
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>Auteur (optionnel)</Text>
-            <TextInput
-              style={styles.input}
-              value={author}
-              onChangeText={setAuthor}
-              placeholder="Ex. Liu Cixin"
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>Nombre de pages (optionnel)</Text>
-            <TextInput
-              style={styles.input}
-              value={total}
-              onChangeText={(v) => setTotal(v.replace(/\D/g, ""))}
-              keyboardType="number-pad"
-              placeholder="Ex. 464"
-              placeholderTextColor={t.textMuted}
-            />
-
-            <Text style={styles.label}>Notes (optionnel)</Text>
-            <TextInput
-              style={[styles.input, styles.textarea]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Notes, citations…"
-              placeholderTextColor={t.textMuted}
-              multiline
-            />
-
-            <View style={styles.actions}>
-              <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
-                <Text style={styles.btnTextSecondary}>Annuler</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
-                disabled={!valid}
-                onPress={handleSave}
-                accessibilityRole="button"
-              >
-                <Text style={styles.btnTextPrimary}>Enregistrer</Text>
-              </Pressable>
-            </View>
-
-            {onDelete && (
-              <Pressable onPress={handleDelete} accessibilityRole="button" style={styles.deleteBtn}>
-                <Text style={[styles.deleteText, { color: danger }]}>Supprimer</Text>
-              </Pressable>
-            )}
+      {olKey && (
+        <View style={[styles.linked, { borderColor: color + "66" }]}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.linkedCover} />
+          ) : (
+            <View style={[styles.linkedCover, { backgroundColor: color + "33" }]} />
+          )}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.linkedTitle} numberOfLines={2}>
+              {title || "Sans titre"}
+            </Text>
+            <Text style={[styles.linkedMeta, { color }]} numberOfLines={1}>
+              Relié à Open Library{year ? ` · ${year}` : ""}
+            </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Modal>
+          <Pressable
+            onPress={unlink}
+            accessibilityRole="button"
+            accessibilityLabel="Retirer le lien Open Library"
+            style={styles.unlinkBtn}
+          >
+            <Ionicons name="close" size={20} color={t.textMuted} />
+          </Pressable>
+        </View>
+      )}
+
+      <Text style={styles.label}>Titre *</Text>
+      <TextInput
+        style={styles.input}
+        value={title}
+        onChangeText={setTitle}
+        placeholder="Ex. Le Problème à trois corps"
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>Auteur (optionnel)</Text>
+      <TextInput
+        style={styles.input}
+        value={author}
+        onChangeText={setAuthor}
+        placeholder="Ex. Liu Cixin"
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>Nombre de pages (optionnel)</Text>
+      <TextInput
+        style={styles.input}
+        value={total}
+        onChangeText={(v) => setTotal(v.replace(/\D/g, ""))}
+        keyboardType="number-pad"
+        placeholder="Ex. 464"
+        placeholderTextColor={t.textMuted}
+      />
+
+      <Text style={styles.label}>Notes (optionnel)</Text>
+      <TextInput
+        style={[styles.input, styles.textarea]}
+        value={notes}
+        onChangeText={setNotes}
+        placeholder="Notes, citations…"
+        placeholderTextColor={t.textMuted}
+        multiline
+      />
+
+      <View style={styles.actions}>
+        <Pressable style={[styles.btn, styles.btnSecondary]} onPress={onClose} accessibilityRole="button">
+          <Text style={styles.btnTextSecondary}>Annuler</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.btn, styles.btnPrimary, !valid && { opacity: 0.5 }]}
+          disabled={!valid}
+          onPress={handleSave}
+          accessibilityRole="button"
+        >
+          <Text style={styles.btnTextPrimary}>Enregistrer</Text>
+        </Pressable>
+      </View>
+
+      {onDelete && <SheetActions onDelete={handleDelete} />}
+    </BottomSheet>
   );
 }
 
 function makeStyles(t: Theme) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
-    scrollContent: { flexGrow: 1, justifyContent: "flex-end" },
-    sheet: {
-      backgroundColor: t.card,
-      borderTopLeftRadius: 28,
-      borderTopRightRadius: 28,
-      borderWidth: 1,
-      borderColor: t.border,
-      padding: 20,
-      paddingTop: 10,
-    },
-    handle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: t.border,
-      marginBottom: 14,
-    },
     heading: { fontFamily: t.fonts.bold, fontSize: t.fs(20), color: t.text, marginBottom: 4 },
     label: {
       fontFamily: t.fonts.semibold,
@@ -284,7 +243,5 @@ function makeStyles(t: Theme) {
     btnSecondary: { backgroundColor: t.cardAlt },
     btnTextPrimary: { fontFamily: t.fonts.bold, fontSize: t.fs(16), color: t.onAccent },
     btnTextSecondary: { fontFamily: t.fonts.semibold, fontSize: t.fs(16), color: t.text },
-    deleteBtn: { alignSelf: "center", minHeight: 44, justifyContent: "center", paddingHorizontal: 12, marginTop: 6 },
-    deleteText: { fontFamily: t.fonts.semibold, fontSize: t.fs(14) },
   });
 }
