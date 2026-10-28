@@ -18,6 +18,7 @@ import { Theme } from "../theme";
 import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { TVShow } from "../types/tvshow";
+import { useOpenAddFromLink } from "../hooks/useOpenAddFromLink";
 
 type Filter = "all" | TVShow["status"];
 const FILTERS: Filter[] = ["all", "watching", "planning", "done", "dropped"];
@@ -46,6 +47,15 @@ export default function TVShowsScreen() {
   const [formVisible, setFormVisible] = useState(false);
   const [selected, setSelected] = useState<TVShow | null>(null);
 
+  function openAdd() {
+    setSelected(null);
+    setFormVisible(true);
+  }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout.
+  // Appelé AVANT le « if (loading) return » : React veut les mêmes hooks, dans le même ordre, à chaque affichage.
+  useOpenAddFromLink(openAdd);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -57,11 +67,6 @@ export default function TVShowsScreen() {
   const count = (f: Filter) => (f === "all" ? shows.length : shows.filter((s) => s.status === f).length);
   const q = query.trim().toLowerCase();
   const shown = q ? visibleShows.filter((s) => s.title.toLowerCase().includes(q)) : visibleShows;
-
-  function openAdd() {
-    setSelected(null);
-    setFormVisible(true);
-  }
 
   function openEdit(show: TVShow) {
     setSelected(show);

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Listana",
     "slug": "Listana",
-    "version": "2.0.0",
+    "version": "2.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "listana",
@@ -59,6 +59,27 @@
               "minWidth": "250dp",
               "minHeight": "110dp",
               "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            },
+            {
+              "name": "QuickAdd",
+              "label": "Listana · Ajouter",
+              "description": "Ajoute une œuvre en un appui, dans le bon média",
+              "minWidth": "250dp",
+              "minHeight": "40dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 1,
+              "resizeMode": "horizontal"
+            },
+            {
+              "name": "Continue",
+              "label": "Listana · Dernier en cours",
+              "description": "La dernière œuvre en cours, prête à reprendre",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
               "targetCellHeight": 2,
               "resizeMode": "horizontal|vertical",
               "updatePeriodMillis": 1800000

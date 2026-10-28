@@ -19,6 +19,7 @@ import { Theme } from "../theme";
 import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Podcast } from "../types/podcast";
+import { useOpenAddFromLink } from "../hooks/useOpenAddFromLink";
 
 type Filter = "all" | Podcast["status"];
 type KindFilter = "all" | "podcast" | "audiobook";
@@ -65,6 +66,9 @@ export default function PodcastsScreen() {
     setEditing(null);
     setModalVisible(true);
   }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout
+  useOpenAddFromLink(handleAdd);
 
   function handleEdit(p: Podcast) {
     setEditing(p);

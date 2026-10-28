@@ -21,6 +21,7 @@ import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Manga, MangaStatus } from "../types/manga";
 import { MANGA_STATUS_LABEL } from "../utils/mangaProgress";
+import { useOpenAddFromLink } from "../hooks/useOpenAddFromLink";
 
 type Filter = "all" | MangaStatus;
 const FILTERS: Filter[] = ["all", "reading", "toRead", "completed", "abandoned"];
@@ -50,6 +51,9 @@ export default function MangasScreen() {
     setEditingManga(null);
     setModalVisible(true);
   }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout
+  useOpenAddFromLink(handleAdd);
 
   function handleEdit(manga: Manga) {
     setEditingManga(manga);

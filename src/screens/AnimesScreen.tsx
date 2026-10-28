@@ -18,6 +18,7 @@ import { Theme } from "../theme";
 import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Anime, AnimeStatus } from "../types/anime";
+import { useOpenAddFromLink } from "../hooks/useOpenAddFromLink";
 
 type Filter = "all" | AnimeStatus;
 const FILTERS: Filter[] = ["all", "watching", "planning", "done", "dropped"];
@@ -46,6 +47,15 @@ export default function AnimesScreen() {
   const [formVisible, setFormVisible] = useState(false);
   const [selected, setSelected] = useState<Anime | null>(null);
 
+  function openAdd() {
+    setSelected(null);
+    setFormVisible(true);
+  }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout.
+  // Appelé AVANT le « if (loading) return » : React veut les mêmes hooks, dans le même ordre, à chaque affichage.
+  useOpenAddFromLink(openAdd);
+
   if (loading) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -59,11 +69,6 @@ export default function AnimesScreen() {
 
   const q = query.trim().toLowerCase();
   const shown = q ? visibleAnimes.filter((a) => a.title.toLowerCase().includes(q)) : visibleAnimes;
-
-  function openAdd() {
-    setSelected(null);
-    setFormVisible(true);
-  }
 
   function openEdit(anime: Anime) {
     setSelected(anime);

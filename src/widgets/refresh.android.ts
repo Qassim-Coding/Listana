@@ -1,13 +1,16 @@
 import { requestWidgetUpdate } from "react-native-android-widget";
-import { RESUME_WIDGET, renderResume } from "./renderResume";
+import { DATA_WIDGETS, RENDERERS } from "./renderWidgets";
 
-// Redessine le widget « Reprendre » s'il est posé sur l'écran d'accueil (sinon, ne fait rien).
+// Redessine les widgets qui affichent ta bibliothèque (« Reprendre » et « Dernier en cours »)
+// s'ils sont posés sur l'écran d'accueil (sinon, ne fait rien).
 // Appelé au retour sur l'accueil de l'app et quand l'app passe en arrière-plan.
 export function refreshWidgets(): void {
-  requestWidgetUpdate({
-    widgetName: RESUME_WIDGET,
-    renderWidget: (info) => renderResume(info.height),
-  }).catch(() => {
-    // Un widget qui ne se met pas à jour ne doit jamais faire planter l'app
-  });
+  for (const name of DATA_WIDGETS) {
+    requestWidgetUpdate({
+      widgetName: name,
+      renderWidget: (info) => RENDERERS[name](info),
+    }).catch(() => {
+      // Un widget qui ne se met pas à jour ne doit jamais faire planter l'app
+    });
+  }
 }

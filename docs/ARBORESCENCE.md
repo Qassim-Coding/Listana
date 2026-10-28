@@ -1,6 +1,6 @@
 # Arborescence du projet Listana
 
-**Listana V2.0** (`app.json` / `package.json` : `2.0.0`). Expo SDK 54, React 19.1, React Native 0.81, Expo Router 6.
+**Listana V2.2** (`app.json` / `package.json` : `2.2.0`). Expo SDK 54, React 19.1, React Native 0.81, Expo Router 6.
 
 Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` sont générés. `.env.local` est présent en local et ignoré par Git.
 
@@ -13,9 +13,9 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |-- .vscode/
 |-- app/                                # Routes Expo Router
 |   |-- +not-found.tsx                  # 404 : redirection vers l'accueil
-|   |-- _layout.tsx                     # Stack racine, Poppins, ThemeProvider
-|   |-- index.tsx                       # Accueil : Reprendre, catégories, Confidentialité, Listana V2.0
-|   |-- settings.tsx                    # Apparence, taille du texte, À propos (sources)
+|   |-- _layout.tsx                     # Stack racine, Poppins, ThemeProvider, refresh widgets
+|   |-- index.tsx                       # Accueil : Reprendre, catégories, Confidentialité, Listana V2.2
+|   |-- settings.tsx                    # Apparence, taille du texte, À propos (sources + version)
 |   |-- anime.tsx                       # Pont vers AnimesScreen
 |   |-- books.tsx                       # Écran Livres complet
 |   |-- games.tsx                       # Pont vers GamesScreen
@@ -55,8 +55,8 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- DateField.tsx
 |   |   |-- MediaSearchField.tsx        # Champ de recherche (450 ms, 8 résultats)
 |   |   |-- ProgressUpdateModal.tsx     # Progression films
-|   |   |-- AnimeCard.tsx
-|   |   |-- AnimeFormModal.tsx          # Recherche TMDB
+|   |   |-- AnimeCard.tsx               # Saison + épisode, ou compteur (film / OAV)
+|   |   |-- AnimeFormModal.tsx          # Recherche TMDB, saisons comme les séries TV
 |   |   |-- TVShowCard.tsx
 |   |   |-- TVShowFormModal.tsx         # Recherche TMDB
 |   |   |-- MovieCard.tsx
@@ -76,12 +76,13 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- NewNoteSheet.tsx
 |   |-- constants/
 |   |   |-- media.ts                    # Clés et libellés des catégories
-|   |   |-- version.ts                  # APP_VERSION / APP_VERSION_LABEL depuis app.json
+|   |   |-- version.ts                  # APP_VERSION / APP_VERSION_LABEL depuis app.json (2.2.0 → V2.2)
 |   |   |-- statusColors.ts             # 4 familles d'états (en cours, prévu, terminé, abandonné)
 |   |-- hooks/
 |   |   |-- useStorage.ts               # MMKV si disponible, sinon AsyncStorage
-|   |   |-- useResumeItems.ts           # Accueil : lit resumeLibrary + rafraîchit le widget
-|   |   |-- useAnimes.ts
+|   |   |-- useResumeItems.ts           # Accueil : lit resumeLibrary + rafraîchit les widgets
+|   |   |-- useOpenAddFromLink.ts       # Widget « Ajouter » : ouvre la fenêtre via ?add=1
+|   |   |-- useAnimes.ts                # +1 saison / épisode ; anciens animés convertis à la volée
 |   |   |-- useBooks.ts                 # Statut dérivé de la page ; markAbandoned
 |   |   |-- useMovies.ts
 |   |   |-- useTVShows.ts
@@ -104,19 +105,22 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 |   |   |-- mangaProgress.ts
 |   |   |-- libraryWorks.ts
 |   |   |-- resumeLibrary.ts            # Lecture bibliothèque (accueil + widget, sans hook)
+|   |   |-- animeProgress.ts            # Saison / épisode d'un animé (carte, accueil, widget, notes)
 |   |-- widgets/
-|       |-- ResumeWidget.tsx            # Dessin « Reprendre » (FlexWidget / TextWidget)
-|       |-- renderResume.tsx            # Charge la bibliothèque, versions clair / sombre
+|       |-- ResumeWidget.tsx            # Dessin « Reprendre » 4×2 (FlexWidget / TextWidget)
+|       |-- ContinueWidget.tsx          # Dessin « Dernier en cours » 2×2
+|       |-- QuickAddWidget.tsx          # Dessin « Ajouter » 4×1 (7 raccourcis)
+|       |-- renderWidgets.tsx           # Répertoire des 3 widgets, versions clair / sombre
 |       |-- widgetTaskHandler.tsx       # Ajout, redimensionnement, MAJ toutes les 30 min
 |       |-- register.ts                 # Web / iOS : no-op
 |       |-- register.android.ts         # Branche le handler
 |       |-- refresh.ts                  # Web / iOS : no-op
-|       |-- refresh.android.ts          # requestWidgetUpdate
-|-- app.json                            # version 2.0.0, plugin widget Resume, hash history, EAS
+|       |-- refresh.android.ts          # requestWidgetUpdate (Resume + Continue)
+|-- app.json                            # version 2.2.0, 3 widgets, hash history, EAS
 |-- eas.json
 |-- eslint.config.js
 |-- index.ts                            # Point d'entrée : expo-router + register widgets
-|-- package.json                        # version 2.0.0, main = index.ts
+|-- package.json                        # version 2.2.0, main = index.ts
 |-- README.md
 |-- tsconfig.json
 ```
@@ -126,13 +130,18 @@ Les dossiers `.expo/`, `dist/`, `node_modules/` et le fichier `expo-env.d.ts` so
 - **Navigation** : Expo Router, fichiers dans `app/`. L'accueil appelle `router.push` avec la clé de `src/constants/media.ts`.
 - **Deux formes d'écran** : `movies.tsx` et `books.tsx` sont complets. Les autres routes sont des ponts vers `src/screens` (en-tête natif sur mobile, `WebBackButton` sur le web).
 - **Thème** : `useTheme()` + `makeStyles(t)`. En-têtes : `makeHeaderOptions(t)`. Taille du texte : `t.fs(n)`.
-- **Version** : une seule source, `expo.version` dans `app.json` (`2.0.0`). `src/constants/version.ts` affiche **Listana V2.0** en bas de l'accueil.
+- **Version** : une seule source, `expo.version` dans `app.json` (`2.2.0`), recopiée dans `package.json`. `src/constants/version.ts` affiche **Listana V2.2** en bas de l'accueil et dans Paramètres → À propos. Pour passer à V2.3 : mets `2.3.0` dans `app.json` et `package.json`.
 - **Fenêtres** : tous les formulaires d'ajout, de modification et de progression passent par `BottomSheet` (fond sombre plein écran, remonte avec le clavier, marge au-dessus de la barre de navigation Android). Les boutons Dupliquer / Supprimer sont dans `SheetActions` (48 px, icône, surbrillance).
 - **États** : `statusColors.ts` range tous les statuts média dans 4 familles (en cours = bleu, prévu = orange, terminé = vert, abandonné = rouge). Les cartes et les puces de filtre utilisent ces couleurs.
 - **Listes** : barre « Filtrer ma liste » sur chaque écran média (notes : « Chercher dans mes notes »).
 - **Notes** : `free`, `list`, `work`. Une note `work` se lie à une œuvre via `libraryWorks.ts` et peut porter des `NoteMark`.
 - **Livres** : le statut (`planning` / `in_progress` / `done`) est recalculé à partir de la page, sauf `abandoned` (choisi à la main). Le crayon de mise à jour reste visible après « Terminé » ou « Abandonné » : enregistrer une page remet le livre « En cours ».
-- **Widget Android** : `Listana · Reprendre` (`react-native-android-widget`, plugin dans `app.json`). Affiche jusqu'à 4 œuvres en cours (selon la hauteur). Un appui sur l'en-tête ouvre l'accueil (`OPEN_APP`) ; un appui sur une ligne ouvre l'écran du média (`listana://…`). Thème clair / sombre selon le téléphone. Mise à jour à l'ajout, au redimensionnement, toutes les 30 min, au retour sur l'accueil, et quand l'app passe en arrière-plan. Android seulement (fichiers `*.android.ts`) : no-op sur web / iOS. Visible uniquement sur un **build natif** (EAS / `npx expo run:android`), pas Expo Go.
+- **Animés** : une série se suit par saison + épisode dans la saison (comme les séries TV) ; un film / OAV reste un simple compteur. `animeProgress.ts` calcule le libellé, le pourcentage et « Prochain : S02E06 » pour la carte, l'accueil, le widget et les notes. Le +1 passe à la saison suivante (avec son nombre d'épisodes TMDB) et termine l'animé à la dernière saison. Un ancien animé sans saison est lu comme saison 1 ; à l'ouverture, TMDB convertit l'épisode absolu (ex. 30) en saison + épisode.
+- **Widgets Android** (`react-native-android-widget`, plugin dans `app.json`, noms dans `renderWidgets.tsx`) :
+  - **Listana · Reprendre** (`Resume`, 4×2) : jusqu'à 4 œuvres en cours. En-tête → accueil (`OPEN_APP`) ; ligne → écran du média (`listana://…`).
+  - **Listana · Dernier en cours** (`Continue`, 2×2) : la dernière œuvre touchée, barre de progression. Un appui ouvre l'écran du média.
+  - **Listana · Ajouter** (`QuickAdd`, 4×1) : 7 raccourcis. Un appui ouvre `listana://books?add=1` (etc.) ; `useOpenAddFromLink` ouvre la fenêtre d'ajout. Retour ramène à l'accueil (`unstable_settings.initialRouteName`).
+  Thème clair / sombre selon le téléphone. `Resume` et `Continue` se mettent à jour à l'ajout, au redimensionnement, toutes les 30 min, au retour sur l'accueil, et quand l'app passe en arrière-plan. Android seulement (fichiers `*.android.ts`) : no-op sur web / iOS. Visible uniquement sur un **build natif** (EAS / `npx expo run:android`), pas Expo Go.
 
 ## Intégrations API
 

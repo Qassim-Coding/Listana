@@ -84,7 +84,9 @@ export default function Home() {
         <Text onPress={() => router.push("/privacy")} style={styles.linkText}>
           Confidentialité
         </Text>
-        <Text style={styles.version}>{APP_VERSION_LABEL}</Text>
+        <Text style={styles.version} accessibilityRole="text" accessibilityLabel={APP_VERSION_LABEL}>
+          {APP_VERSION_LABEL}
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

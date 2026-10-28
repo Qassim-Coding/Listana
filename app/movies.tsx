@@ -22,6 +22,7 @@ import { Theme, makeHeaderOptions } from "../src/theme";
 import { statusColors } from "../src/constants/statusColors";
 import { useTheme } from "../src/ThemeContext";
 import { Movie } from "../src/types/movie";
+import { useOpenAddFromLink } from "../src/hooks/useOpenAddFromLink";
 
 const isWeb = Platform.OS === "web";
 
@@ -62,6 +63,9 @@ export default function MoviesScreen() {
     setEditing(null);
     setFormOpen(true);
   }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout
+  useOpenAddFromLink(openAdd);
 
   function openEdit(movie: Movie) {
     setEditing(movie);

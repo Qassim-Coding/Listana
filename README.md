@@ -2,12 +2,12 @@
 
 Listana regroupe au même endroit ce que vous regardez, lisez, jouez et écoutez. Vous ajoutez une œuvre, suivez votre progression, reprenez là où vous en étiez et marquez ce qui est terminé.
 
-**Listana V2.0** (`2.0.0` dans `app.json`). Démo web : [qassim-coding.github.io/Listana](https://qassim-coding.github.io/Listana)
+**Listana V2.2** (`2.2.0` dans `app.json`). Démo web : [qassim-coding.github.io/Listana](https://qassim-coding.github.io/Listana)
 
 ## Pourquoi c'est utile
 
 - **Un seul carnet** pour les animés, séries, films, livres, mangas, jeux vidéo, podcasts, livres audio et notes.
-- **Reprendre en un coup d'œil** : l'accueil affiche ce qui est en cours, tous médias confondus. Sur Android, le widget **Listana · Reprendre** le montre aussi depuis l'écran d'accueil.
+- **Reprendre en un coup d'œil** : l'accueil affiche ce qui est en cours, tous médias confondus. Sur Android, trois widgets : **Reprendre**, **Dernier en cours**, **Ajouter**.
 - **Une progression adaptée au média** : épisodes et saisons, minutes, pages, tomes ou chapitres.
 - **Mise à jour rapide** : +1 épisode, ou saisie de la page, du chapitre ou des minutes.
 - **Fiches remplies pour vous** : TMDB, Open Library, RAWG, MyAnimeList, Apple Podcasts / Books.
@@ -18,18 +18,18 @@ Listana regroupe au même endroit ce que vous regardez, lisez, jouez et écoutez
 
 - Section « Reprendre » : éléments en cours, du plus récent au plus ancien.
 - Grille de catégories (icône et couleur par média).
-- Lien Confidentialité et mention **Listana V2.0** (lue depuis `app.json`).
+- Lien Confidentialité et mention **Listana V2.2** (lue depuis `app.json`).
 - Accès aux paramètres.
 
 ### Paramètres
 
 - Apparence : système, clair ou sombre.
 - Taille du texte : normal, grand ou très grand.
-- À propos : liste des sources (TMDB, Open Library, RAWG, MyAnimeList, Apple).
+- À propos : **Listana V2.2**, liste des sources (TMDB, Open Library, RAWG, MyAnimeList, Apple).
 
 ### Par média
 
-- **Animés** : animé ou film/OAV, +1 épisode, statuts automatiques. Recherche TMDB.
+- **Animés** : série par saison + épisode (comme les séries TV), film/OAV par compteur. +1 passe à la saison suivante et termine à la dernière. Recherche TMDB (nombre d'épisodes par saison).
 - **Séries TV** : saisons et épisodes, +1 avec passage de saison. Recherche TMDB.
 - **Films** : minutes, note /5, avis. Recherche TMDB.
 - **Livres** : pages optionnelles, statut calculé à partir de la page. Recherche Open Library. On peut encore changer la page après « Terminé », et marquer un livre « Abandonné » (il quitte « En cours » sans perdre la page).
@@ -44,14 +44,15 @@ Les cartes et les puces de filtre partagent 4 couleurs d'état : bleu (en cours)
 
 Les fenêtres d'ajout et de modification utilisent un `BottomSheet` commun (fond plein écran, clavier, marge au-dessus de la barre de navigation Android). Les boutons Dupliquer / Supprimer sont dans `SheetActions` (48 px, icône, surbrillance).
 
-### Widget Android
+### Widgets Android
 
-- Nom : **Listana · Reprendre**. À poser depuis le sélecteur de widgets du téléphone.
-- Liste les œuvres en cours (1 à 4 lignes selon la hauteur). État vide : « Rien en cours pour l'instant ».
-- Un appui sur **Reprendre** ouvre l'accueil. Un appui sur une ligne ouvre l'écran de ce média.
-- Thème clair / sombre selon le téléphone. Couleurs d'état identiques à l'app.
-- Se met à jour au retour sur l'accueil, quand on quitte l'app, au redimensionnement, et toutes les 30 minutes.
-- Android seulement, sur un **build natif** (EAS / `npx expo run:android`). Invisible dans Expo Go et sur le web.
+Trois widgets, à poser depuis le sélecteur du téléphone. Thème clair / sombre selon le téléphone. Android seulement, sur un **build natif** (EAS / `npx expo run:android`). Invisibles dans Expo Go et sur le web.
+
+- **Listana · Reprendre** (4×2) : œuvres en cours (1 à 4 lignes). En-tête → accueil. Une ligne → écran du média.
+- **Listana · Dernier en cours** (2×2) : la dernière œuvre touchée, barre de progression, « Continuer ». Un appui ouvre l'écran du média.
+- **Listana · Ajouter** (4×1) : 7 raccourcis (animé, série, film, livre, manga, jeu, podcast). Un appui ouvre l'écran **et** la fenêtre d'ajout.
+
+`Resume` et `Continue` se mettent à jour au retour sur l'accueil, quand on quitte l'app, au redimensionnement, et toutes les 30 minutes.
 
 ## Où sont enregistrées les données
 
@@ -65,8 +66,8 @@ Détail des clés : [docs/ARBORESCENCE.md](docs/ARBORESCENCE.md). Texte dans l'a
 
 ## Version
 
-Une seule source : `"version": "2.0.0"` dans `app.json` (et la même dans `package.json`).  
-`src/constants/version.ts` affiche **Listana V2.0**. Pour passer à V2.1 : mets `2.1.0` dans ces deux fichiers.
+Une seule source : `"version": "2.2.0"` dans `app.json` (et la même dans `package.json`).  
+`src/constants/version.ts` affiche **Listana V2.2** en bas de l'accueil et dans Paramètres → À propos. Pour passer à V2.3 : mets `2.3.0` dans ces deux fichiers.
 
 ## Démarrer
 
@@ -124,16 +125,19 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 - **Web** : push `main` / `master` → `.github/workflows/deploy-web.yml`. La démo est publique : on n'y met volontairement **aucune clé**, car les variables `EXPO_PUBLIC_*` y seraient lisibles par tous. Sur la démo, seules les recherches Open Library et Apple fonctionnent.
 - **Mobile** : EAS Build, `com.listana.app`. Un correctif JS n'apparaît sur un APK Samsung qu'après un **nouveau build** preview / production.
 
-## Nouveautés de la V2.0
+## Nouveautés de la V2.2
+
+**Widgets**
+
+- **Listana · Reprendre** (4×2), **Dernier en cours** (2×2), **Ajouter** (4×1).
+- Un appui sur « Ajouter » ouvre l'écran du média avec la fenêtre d'ajout. Retour → accueil.
 
 **Interface**
 
 - Thème clair / sombre, taille de texte, accueil « Reprendre ».
-- Nouvelle icône / favicon. Mention Listana V2.0 en bas de l'accueil.
-- `BottomSheet` commun à toutes les fenêtres (fond plein écran, clavier, barre Android).
-- Boutons Dupliquer / Supprimer via `SheetActions`.
-- Barre « Filtrer ma liste » et puces d'état colorées.
-- Widget Android **Listana · Reprendre** (écran d'accueil).
+- Mention **Listana V2.2** en bas de l'accueil et dans Paramètres → À propos.
+- `BottomSheet` commun, `SheetActions`, barre « Filtrer ma liste », puces d'état colorées.
+- Animés : suivi par saisons (TMDB), comme les séries TV.
 
 **Données**
 
@@ -144,9 +148,9 @@ Expo SDK 54, Expo Router 6, React 19.1, React Native 0.81, TypeScript.
 
 **Corrections**
 
-- Livres : on peut encore changer la page (et donc le statut) après « Terminé ».
-- Livres : statut « Abandonné » (le livre quitte « En cours », la page est conservée).
-- Mangas, jeux, podcasts persistés. +1 épisode, saisons, filtres, suppression, retour web.
+- Livres : on peut encore changer la page (et donc le statut) après « Terminé » ; statut « Abandonné ».
+- Animés : un ancien suivi « épisode 30 » est converti en saison + épisode à l'ouverture.
+- Hook `useOpenAddFromLink` appelé avant le chargement (règle des hooks React).
 
 ## Ensuite
 

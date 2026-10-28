@@ -10,6 +10,7 @@ import { Theme } from "../theme";
 import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Game } from "../types/game";
+import { useOpenAddFromLink } from "../hooks/useOpenAddFromLink";
 
 type Filter = "all" | Game["status"];
 type Sort = "recent" | "title" | "platform" | "genre";
@@ -47,6 +48,9 @@ export default function GamesScreen() {
     setEditingGame(null);
     setModalVisible(true);
   }
+
+  // Ouvert depuis le widget « Ajouter » (listana://…?add=1) : on ouvre directement la fenêtre d'ajout
+  useOpenAddFromLink(handleAdd);
 
   function handleEdit(game: Game) {
     setEditingGame(game);
