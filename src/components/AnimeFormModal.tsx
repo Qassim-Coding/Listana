@@ -13,6 +13,7 @@ import { ANIME_STATUS_LABEL, NewAnime } from "../hooks/useAnimes";
 import { Theme } from "../theme";
 import { useTheme } from "../ThemeContext";
 import { Anime, AnimeKind, AnimeStatus } from "../types/anime";
+import { absoluteToSeason } from "../utils/animeProgress";
 import DateField from "./DateField";
 import MediaSearchField from "./MediaSearchField";
 import BottomSheet from "./BottomSheet";
@@ -36,6 +37,12 @@ function toIso(value: string): string | undefined {
   return isNaN(d.getTime()) ? undefined : d.toISOString();
 }
 
+// Liste « épisodes par saison » à partir des saisons TMDB (index 0 = saison 1)
+function seasonList(seasons: { number: number; episodes: number }[]): number[] {
+  const max = seasons.reduce((m, s) => Math.max(m, s.number), 0);
+  return Array.from({ length: max }, (_, i) => seasons.find((s) => s.number === i + 1)?.episodes ?? 0);
+}
+
 export default function AnimeFormModal({ visible, initial, onClose, onSubmit, onDelete }: Props) {
   const t = useTheme();
   const styles = useMemo(() => makeStyles(t), [t]);
@@ -44,6 +51,12 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
   const [status, setStatus] = useState<AnimeStatus>("planning");
   const [currentEpisode, setCurrentEpisode] = useState("0");
   const [totalEpisodes, setTotalEpisodes] = useState("");
+  // Saisons (animé seulement, comme les séries TV)
+  const [currentSeason, setCurrentSeason] = useState("1");
+  const [totalSeasons, setTotalSeasons] = useState("");
+  const [episodesPerSeason, setEpisodesPerSeason] = useState("");
+  const [seasonEpisodes, setSeasonEpisodes] = useState<number[] | undefined>();
+  const [seasonsNote, setSeasonsNote] = useState(false);
   const [year, setYear] = useState("");
   const [startedAt, setStartedAt] = useState("");
   const [endedAt, setEndedAt] = useState("");
@@ -61,6 +74,11 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
     setStatus(initial?.status ?? "planning");
     setCurrentEpisode(String(initial?.currentEpisode ?? 0));
     setTotalEpisodes(initial?.totalEpisodes ? String(initial.totalEpisodes) : "");
+    setCurrentSeason(String(initial?.currentSeason ?? 1));
+    setTotalSeasons(initial?.totalSeasons ? String(initial.totalSeasons) : "");
+    setEpisodesPerSeason(initial?.episodesPerSeason ? String(initial.episodesPerSeason) : "");
+    setSeasonEpisodes(initial?.seasonEpisodes);
+    setSeasonsNote(false);
     setYear(initial?.year ? String(initial.year) : "");
     setStartedAt(dateOnly(initial?.startedAt));
     setEndedAt(dateOnly(initial?.endedAt));
@@ -70,7 +88,43 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
     setPosterUrl(initial?.posterUrl);
   }, [initial, visible]);
 
+  // Ancien animé relié à TMDB mais sans le détail des saisons : on va les chercher une fois,
+  // et on convertit l'épisode « absolu » (ex. 30) en saison + épisode (ex. saison 2, épisode 10).
+  useEffect(() => {
+    if (!visible || !initial || initial.kind === "film") return;
+    if (initial.tmdbType !== "tv" || !initial.tmdbId || initial.seasonEpisodes?.length) return;
+    let active = true;
+    getTVDetails(initial.tmdbId)
+      .then((d) => {
+        if (!active) return;
+        const list = seasonList(d.seasons);
+        if (!list.length) return;
+        const before = list.slice(0, (initial.currentSeason || 1) - 1).reduce((sum, n) => sum + n, 0);
+        const pos = absoluteToSeason(list, before + (initial.currentEpisode ?? 0));
+        setSeasonEpisodes(list);
+        if (d.totalSeasons) setTotalSeasons(String(d.totalSeasons));
+        if (d.totalEpisodes) setTotalEpisodes(String(d.totalEpisodes));
+        setCurrentSeason(String(pos.season));
+        setCurrentEpisode(String(pos.episode));
+        setEpisodesPerSeason(String(list[pos.season - 1] || ""));
+        setSeasonsNote(true);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [initial, visible]);
+
   const valid = title.trim().length > 0;
+
+  // Quand la saison change, on reprend le nombre d'épisodes connu pour cette saison (comme les séries)
+  function changeSeason(v: string) {
+    const clean = digits(v);
+    setCurrentSeason(clean);
+    const n = parseInt(clean, 10);
+    const per = n > 0 ? seasonEpisodes?.[n - 1] : undefined;
+    if (per) setEpisodesPerSeason(String(per));
+  }
 
   async function handlePick(r: SearchResult) {
     setLinking(true);
@@ -84,11 +138,17 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
         if (!totalEpisodes) setTotalEpisodes("1");
       } else {
         const d = await getTVDetails(r.id);
+        const list = seasonList(d.seasons);
         setTitle(d.title);
         setYear(d.year ? String(d.year) : "");
         setPosterUrl(d.posterUrl);
         setTmdbType("tv");
         if (d.totalEpisodes) setTotalEpisodes(String(d.totalEpisodes));
+        // Saisons et épisodes par saison, comme pour les séries TV
+        setSeasonEpisodes(list.length ? list : undefined);
+        if (d.totalSeasons) setTotalSeasons(String(d.totalSeasons));
+        const cs = parseInt(currentSeason, 10) || 1;
+        if (list[cs - 1]) setEpisodesPerSeason(String(list[cs - 1]));
       }
       setTmdbId(r.id);
     } catch {
@@ -106,6 +166,8 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
     setTmdbId(undefined);
     setTmdbType(undefined);
     setPosterUrl(undefined);
+    setSeasonEpisodes(undefined);
+    setSeasonsNote(false);
   }
 
   function handleSave() {
@@ -113,12 +175,18 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
     const isNew = !initial;
     let ended = toIso(endedAt);
     if (status === "done" && !ended) ended = new Date().toISOString();
+    const seasonal = kind === "anime";
     onSubmit({
       title: title.trim(),
       kind,
       status,
       currentEpisode: parseInt(currentEpisode, 10) || 0,
       totalEpisodes: totalEpisodes ? parseInt(totalEpisodes, 10) : undefined,
+      // Saisons : seulement pour un animé (série). Un film / OAV n'en a pas.
+      currentSeason: seasonal ? parseInt(currentSeason, 10) || 1 : undefined,
+      totalSeasons: seasonal && totalSeasons ? parseInt(totalSeasons, 10) : undefined,
+      episodesPerSeason: seasonal ? parseInt(episodesPerSeason, 10) || 0 : undefined,
+      seasonEpisodes: seasonal ? seasonEpisodes : undefined,
       year: year ? parseInt(year, 10) : undefined,
       startedAt: toIso(startedAt) ?? (isNew ? new Date().toISOString() : undefined),
       endedAt: ended,
@@ -209,6 +277,9 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
             </Text>
             <Text style={[styles.linkedMeta, { color }]}>
               Relié à TMDB{year ? ` · ${year}` : ""}
+              {tmdbType === "tv" && totalSeasons
+                ? ` · ${totalSeasons} saison${parseInt(totalSeasons, 10) > 1 ? "s" : ""}`
+                : ""}
               {tmdbType === "tv" && totalEpisodes ? ` · ${totalEpisodes} ép.` : ""}
             </Text>
           </View>
@@ -245,28 +316,83 @@ export default function AnimeFormModal({ visible, initial, onClose, onSubmit, on
         })}
       </View>
 
-      <View style={styles.twoCols}>
-        <View style={styles.col}>
-          <Text style={styles.label}>Épisode actuel</Text>
-          <TextInput
-            value={currentEpisode}
-            onChangeText={(v) => setCurrentEpisode(digits(v))}
-            keyboardType="number-pad"
-            style={styles.input}
-          />
+      {kind === "anime" ? (
+        <>
+          {/* Animé (série) : comme les séries TV, saison + épisode dans la saison */}
+          {seasonsNote && (
+            <Text style={styles.note}>
+              Saisons récupérées depuis TMDB : vérifie la saison et l’épisode, puis enregistre.
+            </Text>
+          )}
+          <View style={styles.twoCols}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Saison actuelle</Text>
+              <TextInput
+                value={currentSeason}
+                onChangeText={changeSeason}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Total saisons</Text>
+              <TextInput
+                value={totalSeasons}
+                onChangeText={(v) => setTotalSeasons(digits(v))}
+                keyboardType="number-pad"
+                placeholder="Optionnel"
+                placeholderTextColor={t.textMuted}
+                style={styles.input}
+              />
+            </View>
+          </View>
+          <View style={styles.twoCols}>
+            <View style={styles.col}>
+              <Text style={styles.label}>Épisode actuel</Text>
+              <TextInput
+                value={currentEpisode}
+                onChangeText={(v) => setCurrentEpisode(digits(v))}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+            </View>
+            <View style={styles.col}>
+              <Text style={styles.label}>Épisodes (cette saison)</Text>
+              <TextInput
+                value={episodesPerSeason}
+                onChangeText={(v) => setEpisodesPerSeason(digits(v))}
+                keyboardType="number-pad"
+                placeholder="Ex. 12"
+                placeholderTextColor={t.textMuted}
+                style={styles.input}
+              />
+            </View>
+          </View>
+        </>
+      ) : (
+        <View style={styles.twoCols}>
+          <View style={styles.col}>
+            <Text style={styles.label}>Épisode actuel</Text>
+            <TextInput
+              value={currentEpisode}
+              onChangeText={(v) => setCurrentEpisode(digits(v))}
+              keyboardType="number-pad"
+              style={styles.input}
+            />
+          </View>
+          <View style={styles.col}>
+            <Text style={styles.label}>Total (optionnel)</Text>
+            <TextInput
+              value={totalEpisodes}
+              onChangeText={(v) => setTotalEpisodes(digits(v))}
+              keyboardType="number-pad"
+              placeholder="Ex. 28"
+              placeholderTextColor={t.textMuted}
+              style={styles.input}
+            />
+          </View>
         </View>
-        <View style={styles.col}>
-          <Text style={styles.label}>Total (optionnel)</Text>
-          <TextInput
-            value={totalEpisodes}
-            onChangeText={(v) => setTotalEpisodes(digits(v))}
-            keyboardType="number-pad"
-            placeholder="Ex. 28"
-            placeholderTextColor={t.textMuted}
-            style={styles.input}
-          />
-        </View>
-      </View>
+      )}
 
       <View style={styles.twoCols}>
         <View style={styles.col}>
@@ -335,6 +461,7 @@ function makeStyles(t: Theme) {
       backgroundColor: t.bg,
     },
     textarea: { minHeight: 90, textAlignVertical: "top" },
+    note: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 10, fontStyle: "italic" },
     linkingRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
     linkingText: { fontFamily: t.fonts.regular, fontSize: t.fs(13), color: t.textMuted },
     linked: {

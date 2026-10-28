@@ -5,6 +5,7 @@ import { getMangas, initMangas } from "../storage/manga.store";
 import { getPodcasts, initPodcasts } from "../storage/podcast.store";
 import { Theme } from "../theme";
 import { Anime } from "../types/anime";
+import { animeProgress } from "./animeProgress";
 import { Book } from "../types/book";
 import { Movie } from "../types/movie";
 import { WorkKey } from "../types/note";
@@ -73,7 +74,7 @@ export async function loadLibraryWorks(): Promise<LibraryWork[]> {
       key: "anime",
       id: a.id,
       title: a.title,
-      meta: `Ép. ${a.currentEpisode ?? 0}${a.totalEpisodes ? ` / ${a.totalEpisodes}` : ""}`,
+      meta: animeProgress(a).short,
       inProgress: a.status === "watching",
       updatedAt: a.updatedAt ?? 0,
     });

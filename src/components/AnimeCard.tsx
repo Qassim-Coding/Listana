@@ -6,6 +6,7 @@ import { Theme } from "../theme";
 import { statusColors } from "../constants/statusColors";
 import { useTheme } from "../ThemeContext";
 import { Anime } from "../types/anime";
+import { animeProgress, isSeasonal } from "../utils/animeProgress";
 
 type Props = {
   anime: Anime;
@@ -19,10 +20,12 @@ export default function AnimeCard({ anime, onEdit, onIncrementEpisode }: Props) 
   // Fond léger selon l'état (en cours, à voir, terminé, abandonné), mêmes couleurs dans tout Listana
   const tone = statusColors(t, anime.status);
   const color = t.media.anime;
+  // Saison + épisode de la saison (animé) ou simple compteur (film / OAV) : voir utils/animeProgress.ts
+  const progress = animeProgress(anime);
+  const pct = progress.pct;
   const total = anime.totalEpisodes;
-  const atMax = !!total && anime.currentEpisode >= total;
-  const finished = anime.status === "done" || atMax;
-  const pct = total ? Math.min(100, Math.round((anime.currentEpisode / total) * 100)) : null;
+  const filmAtMax = !isSeasonal(anime) && !!total && anime.currentEpisode >= total;
+  const finished = anime.status === "done" || filmAtMax;
   const initial = anime.title.trim().charAt(0).toUpperCase();
   const meta = `${anime.kind === "film" ? "Film / OAV" : "Animé"}${anime.year ? ` · ${anime.year}` : ""}`;
 
@@ -52,15 +55,15 @@ export default function AnimeCard({ anime, onEdit, onIncrementEpisode }: Props) 
         <Text style={styles.meta} numberOfLines={1}>
           {meta} · {ANIME_STATUS_LABEL[anime.status] ?? ""}
         </Text>
-        <Text style={[styles.progress, { color }]}>
-          Épisode {anime.currentEpisode}
-          {total ? ` / ${total}` : ""}
+        <Text style={[styles.progress, { color }]} numberOfLines={1}>
+          {progress.label}
         </Text>
         {pct !== null && (
           <View style={styles.track}>
             <View style={[styles.fill, { width: `${pct}%`, backgroundColor: color }]} />
           </View>
         )}
+        {progress.next ? <Text style={styles.next}>{progress.next}</Text> : null}
       </View>
 
       {finished ? (
@@ -104,6 +107,7 @@ function makeStyles(t: Theme) {
     progress: { fontFamily: t.fonts.semibold, fontSize: t.fs(13), marginTop: 8 },
     track: { height: 5, borderRadius: 3, backgroundColor: t.track, marginTop: 6, overflow: "hidden" },
     fill: { height: 5, borderRadius: 3 },
+    next: { fontFamily: t.fonts.regular, fontSize: t.fs(12), color: t.textMuted, marginTop: 6 },
     plusBtn: {
       width: 44,
       height: 44,

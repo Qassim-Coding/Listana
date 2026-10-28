@@ -8,6 +8,7 @@ import { Book } from "../types/book";
 import { Movie } from "../types/movie";
 import { Note } from "../types/note";
 import { TVShow } from "../types/tvshow";
+import { animeProgress } from "./animeProgress";
 import { formatLastRead } from "./mangaProgress";
 
 // Lecture de toute la bibliothèque pour « Reprendre » : utilisée par l'accueil ET par le widget Android.
@@ -68,13 +69,14 @@ export async function loadResumeLibrary(): Promise<{ items: ResumeItem[]; stats:
 
   for (const a of animes) {
     if (!isStarted(a.status, a.currentEpisode)) continue;
-    const total = a.totalEpisodes;
+    // Saison + épisode (animé) ou compteur (film / OAV), calculé au même endroit que la carte
+    const progress = animeProgress(a);
     items.push({
       id: `anime-${a.id}`,
       mediaKey: "anime",
       title: a.title,
-      meta: total ? `Épisode ${a.currentEpisode ?? 0} / ${total}` : `Épisode ${a.currentEpisode ?? 0}`,
-      pct: pctOf(a.currentEpisode, total),
+      meta: progress.short,
+      pct: progress.pct,
       updatedAt: a.updatedAt ?? 0,
     });
   }
